@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { appLogDir } from "@tauri-apps/api/path";
+  import { openPath } from "@tauri-apps/plugin-opener";
+
   import { commands } from "$lib/bindings";
   import Modal from "$lib/components/Modal.svelte";
   import PixelMark from "$lib/components/PixelMark.svelte";
@@ -18,6 +21,15 @@
 
   function close() {
     ui.closeAbout();
+  }
+
+  async function openLogs() {
+    try {
+      const dir = await appLogDir();
+      await openPath(dir);
+    } catch (e) {
+      console.error("openLogs failed:", e);
+    }
   }
 </script>
 
@@ -49,6 +61,7 @@
   </p>
 
   <div class="actions">
+    <button type="button" onclick={openLogs}>Open log folder</button>
     <button type="button" class="primary" onclick={close}>Close</button>
   </div>
 </Modal>

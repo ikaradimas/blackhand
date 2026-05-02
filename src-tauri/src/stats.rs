@@ -49,7 +49,7 @@ pub async fn run(app: AppHandle, api: Arc<Api>) {
                     .body(body)
                     .show()
                 {
-                    eprintln!("notification.show failed: {e}");
+                    log::warn!("notification.show failed: {e}");
                 }
             }
         }
@@ -60,10 +60,10 @@ pub async fn run(app: AppHandle, api: Arc<Api>) {
         announced_done.retain(|id| current_ids.contains(id));
 
         if let Err(e) = TorrentsSnapshotEvent(snapshot).emit(&app) {
-            eprintln!("emit torrents-snapshot failed: {e}");
+            log::warn!("emit torrents-snapshot failed: {e}");
         }
         if let Err(e) = SessionStatsEvent(session).emit(&app) {
-            eprintln!("emit session-stats failed: {e}");
+            log::warn!("emit session-stats failed: {e}");
         }
     }
 }

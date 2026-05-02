@@ -17,7 +17,7 @@ use tauri_specta::{collect_commands, collect_events, Builder};
 fn add_magnet_url(api: Arc<Api>, url: String) {
     tauri::async_runtime::spawn(async move {
         if let Err(e) = api.api_add_torrent(AddTorrent::from_url(url), None).await {
-            eprintln!("deep-link add failed: {e:#}");
+            log::warn!("deep-link add failed: {e:#}");
         }
     });
 }
@@ -40,10 +40,10 @@ where
             match AddTorrent::from_local_filename(&path) {
                 Ok(add) => {
                     if let Err(e) = api.api_add_torrent(add, None).await {
-                        eprintln!("file-association add failed for {path}: {e:#}");
+                        log::warn!("file-association add failed for {path}: {e:#}");
                     }
                 }
-                Err(e) => eprintln!("read torrent file {path} failed: {e:#}"),
+                Err(e) => log::warn!("read torrent file {path} failed: {e:#}"),
             }
         });
     }
@@ -91,7 +91,7 @@ fn bulk_action(app: &AppHandle, pause: bool) {
                 api.api_torrent_action_start(handle).await
             };
             if let Err(e) = res {
-                eprintln!("tray bulk {} failed for id={id}: {e:#}", if pause { "pause" } else { "resume" });
+                log::warn!("tray bulk {} failed for id={id}: {e:#}", if pause { "pause" } else { "resume" });
             }
         }
     });
@@ -153,6 +153,19 @@ pub fn run() {
     }
 
     tauri_builder
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("blackhand".into()),
+                    }),
+                ])
+                .level(log::LevelFilter::Info)
+                .max_file_size(5 * 1024 * 1024 /* 5 MB */)
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
+                .build(),
+        )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_notification::init())
