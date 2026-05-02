@@ -2,10 +2,25 @@
   import { commands } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import { torrents } from "$lib/stores/torrents.svelte";
+  import { categories, UNCATEGORIZED } from "$lib/stores/categories.svelte";
   import { toasts } from "$lib/stores/toasts.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import TorrentRow from "$lib/components/TorrentRow.svelte";
   import SkeletonRow from "$lib/components/SkeletonRow.svelte";
+  import CategorySidebar from "$lib/components/CategorySidebar.svelte";
+
+  // Refresh category counts whenever the torrent list changes.
+  $effect(() => {
+    void torrents.list.length;
+    categories.refresh();
+  });
+
+  const filtered = $derived.by(() => {
+    const f = categories.filter;
+    if (f === null) return torrents.list;
+    if (f === UNCATEGORIZED) return torrents.list.filter((t) => !t.category);
+    return torrents.list.filter((t) => t.category === f);
+  });
 
   async function act(action: "pause" | "resume" | "forget", id: number) {
     try {
@@ -22,48 +37,69 @@
   }
 </script>
 
-{#if !torrents.loaded}
-  <section class="list">
-    {#each [0, 1, 2] as i}
-      <SkeletonRow delay={i * 150} />
-    {/each}
-  </section>
-{:else if torrents.list.length === 0}
-  <div class="empty">
-    <span class="empty-glow"></span>
-    <p class="empty-title">// awaiting input</p>
-    <p class="empty-prompt">
-      paste a magnet, drop a <span class="mono">.torrent</span>, or
-      <button class="empty-cta" onclick={() => ui.openAdd()}>+ Add</button>
-    </p>
-    <p class="empty-hint dim">⌘N to open the add dialog</p>
-  </div>
-{:else}
-  <header class="col-headers tnum">
-    <span></span>
-    <span class="hd-name">NAME</span>
-    <span class="hd-num">SIZE</span>
-    <span class="hd-num">↓ DOWN</span>
-    <span class="hd-num">↑ UP</span>
-    <span class="hd-num">PEERS</span>
-    <span class="hd-num">ETA</span>
-    <span></span>
-  </header>
+<div class="layout">
+  <CategorySidebar />
 
-  <section class="list">
-    {#each torrents.list as t (t.id)}
-      <TorrentRow
-        {t}
-        onpause={(id) => act("pause", id)}
-        onresume={(id) => act("resume", id)}
-        onforget={(id) => act("forget", id)}
-        ondelete={askDelete}
-      />
-    {/each}
-  </section>
-{/if}
+  <div class="content">
+    {#if !torrents.loaded}
+      <section class="list">
+        {#each [0, 1, 2] as i}
+          <SkeletonRow delay={i * 150} />
+        {/each}
+      </section>
+    {:else if torrents.list.length === 0}
+      <div class="empty">
+        <span class="empty-glow"></span>
+        <p class="empty-title">// awaiting input</p>
+        <p class="empty-prompt">
+          paste a magnet, drop a <span class="mono">.torrent</span>, or
+          <button class="empty-cta" onclick={() => ui.openAdd()}>+ Add</button>
+        </p>
+        <p class="empty-hint dim">⌘N to open the add dialog</p>
+      </div>
+    {:else if filtered.length === 0}
+      <div class="empty">
+        <p class="empty-title">// no torrents in this category</p>
+        <p class="empty-prompt dim">click "All" in the sidebar to clear the filter</p>
+      </div>
+    {:else}
+      <header class="col-headers tnum">
+        <span></span>
+        <span class="hd-name">NAME</span>
+        <span class="hd-num">SIZE</span>
+        <span class="hd-num">↓ DOWN</span>
+        <span class="hd-num">↑ UP</span>
+        <span class="hd-num">PEERS</span>
+        <span class="hd-num">ETA</span>
+        <span></span>
+      </header>
+
+      <section class="list">
+        {#each filtered as t (t.id)}
+          <TorrentRow
+            {t}
+            onpause={(id) => act("pause", id)}
+            onresume={(id) => act("resume", id)}
+            onforget={(id) => act("forget", id)}
+            ondelete={askDelete}
+          />
+        {/each}
+      </section>
+    {/if}
+  </div>
+</div>
 
 <style>
+  .layout {
+    display: flex;
+    gap: var(--sp-4);
+    align-items: flex-start;
+  }
+  .content {
+    flex: 1;
+    min-width: 0;
+  }
+
   /* Must mirror TorrentRow's .grid template (including the 124px actions
    * column) so column boundaries line up. */
   .col-headers {

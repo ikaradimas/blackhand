@@ -5,6 +5,8 @@ use librqbit::api::{TorrentDetailsResponse, TorrentListResponse};
 use librqbit::session_stats::snapshot::SessionStatsSnapshot;
 use librqbit::{TorrentStats, TorrentStatsState};
 
+use crate::categories::CategoryStore;
+
 #[derive(Serialize, Deserialize, Type, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum TorrentState {
@@ -43,6 +45,7 @@ pub struct TorrentSummary {
     pub peers_live: u32,
     pub eta_secs: Option<u64>,
     pub error: Option<String>,
+    pub category: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Type, Clone, Debug)]
@@ -155,15 +158,13 @@ impl From<SessionStatsSnapshot> for SessionStats {
     }
 }
 
-impl From<TorrentListResponse> for TorrentSnapshot {
-    fn from(resp: TorrentListResponse) -> Self {
+impl TorrentSnapshot {
+    pub fn from_response(resp: TorrentListResponse, store: Option<&CategoryStore>) -> Self {
         let torrents = resp
             .torrents
             .into_iter()
             .filter_map(|t| {
-                // skip torrents without an id (shouldn't happen for managed torrents)
                 let id = t.id? as u64;
-
                 let s = t.stats.as_ref();
                 let total_bytes = s.map(|s| s.total_bytes).unwrap_or(0);
                 let progress_bytes = s.map(|s| s.progress_bytes).unwrap_or(0);
@@ -189,6 +190,8 @@ impl From<TorrentListResponse> for TorrentSnapshot {
                         .as_u64()
                 });
 
+                let category = store.and_then(|s| s.category_for(&t.info_hash));
+
                 Some(TorrentSummary {
                     id,
                     info_hash: t.info_hash,
@@ -207,9 +210,16 @@ impl From<TorrentListResponse> for TorrentSnapshot {
                     peers_live,
                     eta_secs,
                     error: s.and_then(|s| s.error.clone()),
+                    category,
                 })
             })
             .collect();
         Self { torrents }
+    }
+}
+
+impl From<TorrentListResponse> for TorrentSnapshot {
+    fn from(resp: TorrentListResponse) -> Self {
+        Self::from_response(resp, None)
     }
 }

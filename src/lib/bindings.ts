@@ -16,6 +16,8 @@ export const commands = {
 	getTorrentDetail: (id: number) => typedError<TorrentDetail, string>(__TAURI_INVOKE("get_torrent_detail", { id })),
 	setOnlyFiles: (id: number, fileIdxs: number[]) => typedError<null, string>(__TAURI_INVOKE("set_only_files", { id, fileIdxs })),
 	getTrackers: (id: number) => typedError<string[], string>(__TAURI_INVOKE("get_trackers", { id })),
+	listCategories: () => typedError<CategoryInfo[], string>(__TAURI_INVOKE("list_categories")),
+	setTorrentCategory: (infoHash: string, category: string | null) => typedError<null, string>(__TAURI_INVOKE("set_torrent_category", { infoHash, category })),
 	getSettings: () => typedError<AppSettings, string>(__TAURI_INVOKE("get_settings")),
 	saveSettings: (settings: AppSettings) => typedError<null, string>(__TAURI_INVOKE("save_settings", { settings })),
 	restartApp: () => __TAURI_INVOKE<void>("restart_app"),
@@ -46,6 +48,11 @@ export type AppSettings = {
 	// 0 -> unlimited.
 	upload_limit_kbps: number,
 	download_limit_kbps: number,
+};
+
+export type CategoryInfo = {
+	name: string,
+	count: number,
 };
 
 export type SessionStats = {
@@ -106,6 +113,7 @@ export type TorrentSummary = {
 	peers_live: number,
 	eta_secs: number | null,
 	error: string | null,
+	category: string | null,
 };
 
 export type TorrentsSnapshotEvent = TorrentSnapshot;

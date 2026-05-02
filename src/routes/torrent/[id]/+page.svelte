@@ -8,7 +8,9 @@
   import { unwrap } from "$lib/api";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import PixelMark from "$lib/components/PixelMark.svelte";
+  import { categories } from "$lib/stores/categories.svelte";
   import { toasts } from "$lib/stores/toasts.svelte";
+  import { torrents } from "$lib/stores/torrents.svelte";
 
   let id = $derived(Number(page.params.id));
   let detail = $state<TorrentDetail | null>(null);
@@ -16,7 +18,26 @@
   let trackers = $state<string[]>([]);
   let loadFailed = $state(false);
   let savingFiles = $state(false);
+  let categoryInput = $state("");
+  let savingCategory = $state(false);
   let timer: ReturnType<typeof setInterval> | null = null;
+
+  // Live snapshot of the torrent (gives us the current category).
+  const summary = $derived(torrents.list.find((t) => t.id === id));
+
+  // Seed the category input from the torrent's current category.
+  let lastSyncedCategory: string | null = $state(null);
+  $effect(() => {
+    const current = summary?.category ?? "";
+    if (current !== lastSyncedCategory) {
+      categoryInput = current;
+      lastSyncedCategory = current;
+    }
+  });
+
+  const categoryDirty = $derived(
+    detail !== null && categoryInput.trim() !== (summary?.category ?? "").trim(),
+  );
 
   async function refresh() {
     try {
@@ -71,6 +92,20 @@
       await revealItemInDir(full);
     } catch (e) {
       toasts.error(`couldn't reveal file: ${e}`);
+    }
+  }
+
+  async function applyCategory() {
+    if (!detail) return;
+    savingCategory = true;
+    try {
+      const trimmed = categoryInput.trim();
+      await categories.assign(detail.info_hash, trimmed === "" ? null : trimmed);
+      toasts.ok(trimmed === "" ? "category cleared" : `category set to "${trimmed}"`);
+    } catch (e) {
+      toasts.error(`couldn't set category: ${e}`);
+    } finally {
+      savingCategory = false;
     }
   }
   onDestroy(() => {
@@ -172,6 +207,35 @@
       <dd class="tnum">{fmtBytes(detail.total_bytes)}</dd>
       <dt>Files</dt>
       <dd class="tnum">{files.length}</dd>
+      <dt>Category</dt>
+      <dd class="cat-row">
+        <input
+          type="text"
+          list="categories-options"
+          placeholder="(none)"
+          bind:value={categoryInput}
+          disabled={savingCategory}
+          onkeydown={(e) => {
+            if (e.key === "Enter" && categoryDirty) {
+              e.preventDefault();
+              applyCategory();
+            }
+          }}
+        />
+        <datalist id="categories-options">
+          {#each categories.list as c (c.name)}
+            <option value={c.name}></option>
+          {/each}
+        </datalist>
+        <button
+          type="button"
+          class="cat-apply"
+          onclick={applyCategory}
+          disabled={!categoryDirty || savingCategory}
+        >
+          {savingCategory ? "…" : "Apply"}
+        </button>
+      </dd>
     </dl>
   </section>
 
@@ -426,6 +490,47 @@
   .kv .mono {
     font-family: var(--font-mono);
     color: var(--fg-1);
+  }
+
+  .cat-row {
+    display: flex;
+    gap: var(--sp-2);
+    align-items: center;
+  }
+  .cat-row input[type="text"] {
+    flex: 1;
+    padding: 4px var(--sp-2);
+    background: var(--bg-1);
+    border: 1px solid var(--bg-3);
+    color: var(--fg-0);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    transition: border-color var(--motion-fast);
+  }
+  .cat-row input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 1px var(--accent-cyan);
+  }
+  .cat-apply {
+    background: var(--bg-2);
+    border: 1px solid var(--bg-3);
+    color: var(--fg-0);
+    border-radius: var(--radius-sm);
+    padding: 4px var(--sp-3);
+    font-family: inherit;
+    font-size: var(--fs-xs);
+    cursor: pointer;
+    transition: border-color var(--motion-fast), color var(--motion-fast);
+  }
+  .cat-apply:hover:not(:disabled) {
+    border-color: var(--accent-magenta);
+    color: var(--accent-magenta);
+  }
+  .cat-apply:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .files {

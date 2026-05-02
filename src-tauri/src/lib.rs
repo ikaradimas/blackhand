@@ -1,3 +1,4 @@
+mod categories;
 mod commands;
 mod paths;
 mod session;
@@ -7,6 +8,7 @@ mod types;
 
 use std::sync::Arc;
 
+use categories::CategoryStore;
 use librqbit::api::{ApiTorrentListOpts, TorrentIdOrHash};
 use librqbit::{AddTorrent, Api};
 use tauri::menu::{Menu, MenuItem};
@@ -111,6 +113,8 @@ fn make_specta_builder() -> Builder<tauri::Wry> {
             commands::get_torrent_detail,
             commands::set_only_files,
             commands::get_trackers,
+            commands::list_categories,
+            commands::set_torrent_category,
             commands::get_settings,
             commands::save_settings,
             commands::restart_app,
@@ -180,8 +184,11 @@ pub fn run() {
             let api = tauri::async_runtime::block_on(session::build_api(&cfg))?;
             app.manage(api.clone());
 
+            let cats = Arc::new(CategoryStore::load());
+            app.manage(cats.clone());
+
             let handle = app.handle().clone();
-            tauri::async_runtime::spawn(stats::run(handle, api.clone()));
+            tauri::async_runtime::spawn(stats::run(handle, api.clone(), cats.clone()));
 
             // Cold-start deep links (app launched *with* a magnet URL).
             if let Ok(Some(urls)) = app.deep_link().get_current() {

@@ -5,6 +5,7 @@ use librqbit::api::{ApiTorrentListOpts, TorrentIdOrHash};
 use librqbit::{AddTorrent, Api};
 use tauri::{AppHandle, State};
 
+use crate::categories::{CategoryInfo, CategoryStore};
 use crate::settings::{self, AppSettings};
 use crate::types::{AddTorrentResult, SessionStats, TorrentDetail, TorrentSnapshot};
 
@@ -54,10 +55,14 @@ pub async fn add_torrent_file(
 
 #[tauri::command]
 #[specta::specta]
-pub fn list_torrents(api: State<'_, Arc<Api>>) -> CmdResult<TorrentSnapshot> {
-    Ok(api
-        .api_torrent_list_ext(ApiTorrentListOpts { with_stats: true })
-        .into())
+pub fn list_torrents(
+    api: State<'_, Arc<Api>>,
+    cats: State<'_, Arc<CategoryStore>>,
+) -> CmdResult<TorrentSnapshot> {
+    Ok(TorrentSnapshot::from_response(
+        api.api_torrent_list_ext(ApiTorrentListOpts { with_stats: true }),
+        Some(cats.inner()),
+    ))
 }
 
 #[tauri::command]
@@ -136,6 +141,27 @@ pub fn get_trackers(api: State<'_, Arc<Api>>, id: u64) -> CmdResult<Vec<String>>
         .collect();
     urls.sort();
     Ok(urls)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn list_categories(
+    api: State<'_, Arc<Api>>,
+    cats: State<'_, Arc<CategoryStore>>,
+) -> CmdResult<Vec<CategoryInfo>> {
+    let resp = api.api_torrent_list_ext(ApiTorrentListOpts { with_stats: false });
+    let info_hashes: Vec<String> = resp.torrents.into_iter().map(|t| t.info_hash).collect();
+    Ok(cats.inner().list_with_counts(&info_hashes))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_torrent_category(
+    cats: State<'_, Arc<CategoryStore>>,
+    info_hash: String,
+    category: Option<String>,
+) -> CmdResult<()> {
+    cats.inner().set_category(info_hash, category).map_err(err)
 }
 
 #[tauri::command]

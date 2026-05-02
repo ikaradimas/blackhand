@@ -10,6 +10,7 @@ use tauri::AppHandle;
 use tauri_plugin_notification::NotificationExt;
 use tauri_specta::Event;
 
+use crate::categories::CategoryStore;
 use crate::types::{SessionStats, TorrentSnapshot};
 
 const TICK: Duration = Duration::from_millis(500);
@@ -20,7 +21,7 @@ pub struct TorrentsSnapshotEvent(pub TorrentSnapshot);
 #[derive(Serialize, Deserialize, Type, Clone, Debug, Event)]
 pub struct SessionStatsEvent(pub SessionStats);
 
-pub async fn run(app: AppHandle, api: Arc<Api>) {
+pub async fn run(app: AppHandle, api: Arc<Api>, cats: Arc<CategoryStore>) {
     let mut interval = tokio::time::interval(TICK);
     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
@@ -31,9 +32,10 @@ pub async fn run(app: AppHandle, api: Arc<Api>) {
     loop {
         interval.tick().await;
 
-        let snapshot: TorrentSnapshot = api
-            .api_torrent_list_ext(ApiTorrentListOpts { with_stats: true })
-            .into();
+        let snapshot = TorrentSnapshot::from_response(
+            api.api_torrent_list_ext(ApiTorrentListOpts { with_stats: true }),
+            Some(&cats),
+        );
         let session: SessionStats = api.api_session_stats().into();
 
         // Detect finished-transitions and notify once per torrent.
