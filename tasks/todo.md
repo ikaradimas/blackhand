@@ -390,11 +390,16 @@ User-picked v0.2 scope: UI polish + detail panel polish + categories. All three 
 
 10 commits land Phase 5. Total project commits: 38. Memos: 14.
 
-What's left for v0.3 candidates:
-- Peer list (file upstream issue on librqbit to re-export PeerStatsFilter)
-- Watch folder, bandwidth scheduler, RSS, search, Tor/I2P from §7
-- Category rename/delete from the UI
-- Sign + notarize wiring (still user-action items)
+**Status going forward:** the user is satisfied with v0.2 functionality and isn't currently planning a v0.3. The items below are noted only as a parking lot — they're features that *could* be picked up later if a specific need surfaces, not commitments or planned milestones.
+
+Future-candidate parking lot (no schedule):
+- Peer list — blocked upstream until librqbit re-exports `PeerStatsFilter`. Worth filing an upstream issue if/when this becomes load-bearing.
+- Watch folder, bandwidth scheduler, RSS, built-in search, Tor/I2P/SOCKS5-binding (§7 Tier-2/3 list).
+- Category rename/delete from the UI (currently editable by hand in `categories.json`).
+- Force-reannounce per tracker — also waiting on librqbit to surface a public method.
+- Real code-signing + notarization for distribution (Apple Developer + Windows CA — user-action items).
+
+If any of these become priorities later, the path is: pick 2–3 per the §7 rule, plan as a Phase 6 / v0.3, and execute.
 
 ### 2026-05-02 — Phase 4 complete · v0.1.0 shipped
 

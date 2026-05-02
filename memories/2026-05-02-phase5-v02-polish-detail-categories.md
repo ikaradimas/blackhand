@@ -39,12 +39,16 @@ v0.2 ships three feature areas the user picked from the §7 stretch list:
 - **No peer list panel.** `librqbit::Api::api_peer_stats` requires a `PeerStatsFilter` argument from the `torrent_state::live::peer::stats::snapshot` module, and `torrent_state` is `mod` (private) in librqbit's `lib.rs`. The type isn't re-exported, so external callers can't construct one. Per-torrent peer **count** is still available from `TorrentSummary.peers_live` (driven by `LiveStats.snapshot.peer_stats.live`). To unblock: file an upstream issue asking librqbit to re-export `PeerStatsFilter` (or add a no-arg `api_peers` convenience).
 - **No force-reannounce.** No public method on `Api` to trigger a tracker reannounce. Trackers card stays read-only.
 
-## What's deferred to v0.3+
-- Category rename/delete from the UI
-- Peer list (blocked by upstream until librqbit re-exports the filter type)
-- Force-reannounce (same blocker shape)
-- Watch folder, bandwidth scheduler, RSS, search, Tor/I2P (still unsharted from §7)
-- Real signing/notarization for distribution
+## Future-candidate parking lot (no scheduled work)
+The user signed off on v0.2 as feature-complete for current needs and **isn't planning a v0.3 right now**. The items below are noted only as candidates that *may* be picked up later if a specific need surfaces — not deferred milestones, not a roadmap.
+
+- Category rename/delete from the UI (today: edit `categories.json` by hand).
+- Peer list — blocked upstream until librqbit re-exports the filter type.
+- Force-reannounce per tracker — same upstream-blocker shape.
+- Watch folder, bandwidth scheduler, RSS, built-in search, Tor/I2P (§7 stretch list).
+- Real signing/notarization for distribution (user-action: Apple Developer + Windows CA certs).
+
+If any of these become priorities, the path is: pick 2–3 per the §7 "don't blanket-add" rule, plan as a Phase 6, execute.
 
 ## Consequences
 - Anyone adding a new modal should default to **inline errors** for actions that originate inside it; toast only for cross-screen results.
