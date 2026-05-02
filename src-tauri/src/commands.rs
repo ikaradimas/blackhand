@@ -153,3 +153,9 @@ pub fn save_settings(
 pub fn restart_app(app: AppHandle) {
     app.restart();
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}

@@ -5,6 +5,7 @@ export type RemoveTarget = { id: number; name: string };
 class UIStore {
   addModal = $state(false);
   settingsModal = $state(false);
+  aboutModal = $state(false);
   /** When set, a remove-with-files confirmation is pending for this torrent. */
   removeTarget = $state<RemoveTarget | null>(null);
 
@@ -19,6 +20,12 @@ class UIStore {
   }
   closeSettings() {
     this.settingsModal = false;
+  }
+  openAbout() {
+    this.aboutModal = true;
+  }
+  closeAbout() {
+    this.aboutModal = false;
   }
   askRemove(target: RemoveTarget) {
     this.removeTarget = target;

@@ -44,6 +44,13 @@
     <span class="wordmark">BLACKHAND</span>
     <span class="bracket">]</span>
     <span class="dim">// torrent.client</span>
+    <button
+      type="button"
+      class="ver-badge"
+      onclick={() => ui.openAbout()}
+      title="About"
+      aria-label="About BlackHand"
+    >v0.1.0</button>
   </div>
 
   <div class="right">
@@ -132,6 +139,24 @@
     font-size: var(--fs-xs);
     letter-spacing: var(--tracking-wider);
     margin-left: var(--sp-2);
+  }
+
+  .ver-badge {
+    background: transparent;
+    border: 1px solid var(--bg-3);
+    color: var(--fg-2);
+    border-radius: var(--radius-sm);
+    padding: 1px 6px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: var(--tracking-wider);
+    cursor: pointer;
+    margin-left: var(--sp-2);
+    transition: color var(--motion-fast), border-color var(--motion-fast);
+  }
+  .ver-badge:hover {
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
   }
 
   .right {

@@ -18,6 +18,7 @@ export const commands = {
 	getSettings: () => typedError<AppSettings, string>(__TAURI_INVOKE("get_settings")),
 	saveSettings: (settings: AppSettings) => typedError<null, string>(__TAURI_INVOKE("save_settings", { settings })),
 	restartApp: () => __TAURI_INVOKE<void>("restart_app"),
+	appVersion: () => __TAURI_INVOKE<string>("app_version"),
 };
 
 /** Events */
