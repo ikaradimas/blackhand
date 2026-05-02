@@ -1,0 +1,111 @@
+/* BlackHand effects: scanlines, glow, brackets.
+ * Decorative — never overlay body text or numeric tables. See plan §5.4.
+ */
+
+/* Scanline overlay — apply to a full-viewport pseudo-element on body.
+ * Opacity is intentionally tiny; it should be felt, not seen. */
+.fx-scanlines::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-fx);
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0px,
+    rgba(255, 255, 255, 0) 2px,
+    rgba(255, 255, 255, 0.018) 2px,
+    rgba(255, 255, 255, 0.018) 3px
+  );
+}
+
+/* Soft vignette to lift text against the very-dark surfaces */
+.fx-vignette::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-fx);
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+}
+
+/* Glow utilities — apply on hover/active states. */
+.glow-magenta {
+  box-shadow: var(--glow-magenta-sm);
+}
+.glow-magenta-strong {
+  box-shadow: var(--glow-magenta-md);
+}
+.glow-cyan {
+  box-shadow: var(--glow-cyan-sm);
+}
+.glow-cyan-strong {
+  box-shadow: var(--glow-cyan-md);
+}
+
+/* Text glow — only for display type, never body */
+.text-glow-magenta {
+  text-shadow: 0 0 12px rgba(255, 42, 109, 0.55), 0 0 24px rgba(255, 42, 109, 0.25);
+}
+.text-glow-cyan {
+  text-shadow: 0 0 10px rgba(8, 247, 254, 0.45);
+}
+
+/* Bracket chrome — clip-path corner notches.
+ * Apply to a panel to get a beveled "data terminal" feel. */
+.bracket-corners {
+  clip-path: polygon(
+    14px 0,
+    calc(100% - 14px) 0,
+    100% 14px,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 14px),
+    0 14px
+  );
+}
+
+/* Glitch flash for state transitions (added/completed).
+ * Triggered via class toggle; auto-cleans via animation iteration. */
+@keyframes glitch-flash {
+  0% {
+    transform: translate(0);
+    filter: hue-rotate(0deg);
+  }
+  20% {
+    transform: translate(-2px, 1px);
+    filter: hue-rotate(20deg);
+  }
+  40% {
+    transform: translate(2px, -1px);
+    filter: hue-rotate(-20deg);
+  }
+  60% {
+    transform: translate(-1px, 0);
+  }
+  100% {
+    transform: translate(0);
+    filter: hue-rotate(0deg);
+  }
+}
+
+.fx-glitch {
+  animation: glitch-flash 360ms ease-out 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-glitch {
+    animation: none;
+  }
+}
+
+/* Tabular figures for any cell that updates */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}

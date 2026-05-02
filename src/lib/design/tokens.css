@@ -1,0 +1,134 @@
+/* BlackHand design tokens — Neon Noir
+ * Source of truth for color, type, spacing, motion.
+ * See tasks/todo.md §5 + memories/2026-05-02-aesthetic-neon-noir.md.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@600;700;800&display=swap");
+
+:root {
+  /* — Surfaces ————————————————————————————————— */
+  --bg-0: #07070C;        /* app background */
+  --bg-1: #0E0E16;        /* cards, rows */
+  --bg-2: #181826;        /* raised: modals, popovers */
+  --bg-3: #232336;        /* hover, pressed */
+
+  /* — Foreground ————————————————————————————————— */
+  --fg-0: #ECECF5;        /* primary text */
+  --fg-1: #B4B4D0;        /* secondary text, table data */
+  --fg-2: #6E6E8C;        /* tertiary, placeholders */
+  --fg-dim: #3D3D55;      /* dividers, faint chrome */
+
+  /* — Accents (use sparingly) ——————————————————————— */
+  --accent-magenta: #FF2A6D;
+  --accent-magenta-hover: #FF3D7F;
+  --accent-cyan: #08F7FE;
+  --accent-cyan-hover: #6CFAFF;
+  --accent-violet: #B14EFF;
+
+  /* — Semantic ——————————————————————————————————— */
+  --ok: #39FF14;
+  --warn: #FFB23F;
+  --err: #FF3F3F;
+
+  /* — Glow shadows ——————————————————————————————— */
+  --glow-magenta-sm: 0 0 8px rgba(255, 42, 109, 0.45);
+  --glow-magenta-md: 0 0 14px rgba(255, 42, 109, 0.5), 0 0 28px rgba(255, 42, 109, 0.2);
+  --glow-cyan-sm: 0 0 8px rgba(8, 247, 254, 0.35);
+  --glow-cyan-md: 0 0 14px rgba(8, 247, 254, 0.45), 0 0 28px rgba(8, 247, 254, 0.18);
+
+  /* — Type ——————————————————————————————————————— */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "IBM Plex Mono", monospace;
+  --font-display: "Orbitron", ui-sans-serif, system-ui, sans-serif;
+
+  --fs-xs: 11px;
+  --fs-sm: 13px;          /* default body */
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 28px;
+
+  --lh-tight: 1.15;
+  --lh-normal: 1.4;
+  --lh-loose: 1.6;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.1em;
+  --tracking-widest: 0.18em;     /* wordmark / display */
+
+  /* — Spacing scale ————————————————————————————— */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* — Radii (kept sharp — cyberpunk leans hard-edge) ——— */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  /* — Borders ——————————————————————————————————— */
+  --border-faint: 1px solid var(--bg-3);
+  --border-cyan: 1px solid var(--accent-cyan);
+  --border-magenta: 1px solid var(--accent-magenta);
+
+  /* — Motion ——————————————————————————————————— */
+  --motion-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-slow: 360ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* — Layout ——————————————————————————————————— */
+  --content-max: 1280px;
+  --row-height: 56px;
+  --header-height: 60px;
+
+  /* — Z layers ——————————————————————————————————— */
+  --z-base: 1;
+  --z-elevated: 10;
+  --z-modal: 100;
+  --z-tooltip: 200;
+  --z-fx: 1000;          /* scanline overlay etc. */
+
+  color-scheme: dark;
+}
+
+/* — Base resets + globals ————————————————————————— */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg-0);
+  color: var(--fg-0);
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal);
+  font-feature-settings: "tnum", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: rgba(255, 42, 109, 0.35);
+  color: var(--fg-0);
+}
