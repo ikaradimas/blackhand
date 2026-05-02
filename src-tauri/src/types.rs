@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use librqbit::api::TorrentListResponse;
+use librqbit::api::{TorrentDetailsResponse, TorrentListResponse};
 use librqbit::session_stats::snapshot::SessionStatsSnapshot;
-use librqbit::TorrentStatsState;
+use librqbit::{TorrentStats, TorrentStatsState};
 
 #[derive(Serialize, Deserialize, Type, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -65,6 +65,69 @@ pub struct AddTorrentResult {
     pub id: Option<u64>,
     pub info_hash: String,
     pub name: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Type, Clone, Debug)]
+pub struct TorrentFile {
+    /// Position in the torrent's file table — the value used by `set_only_files`.
+    pub idx: u32,
+    pub name: String,
+    pub components: Vec<String>,
+    pub length: u64,
+    pub included: bool,
+}
+
+#[derive(Serialize, Deserialize, Type, Clone, Debug)]
+pub struct TorrentDetail {
+    pub id: u64,
+    pub info_hash: String,
+    pub name: Option<String>,
+    pub output_folder: String,
+    pub state: TorrentState,
+    pub finished: bool,
+    pub progress_bytes: u64,
+    pub uploaded_bytes: u64,
+    pub total_bytes: u64,
+    pub progress_pct: f32,
+    pub error: Option<String>,
+    pub files: Vec<TorrentFile>,
+}
+
+impl TorrentDetail {
+    pub fn from_parts(d: TorrentDetailsResponse, stats: TorrentStats) -> Self {
+        let files = d
+            .files
+            .unwrap_or_default()
+            .into_iter()
+            .enumerate()
+            .map(|(idx, f)| TorrentFile {
+                idx: idx as u32,
+                name: f.name,
+                components: f.components,
+                length: f.length,
+                included: f.included,
+            })
+            .collect();
+        let progress_pct = if stats.total_bytes == 0 {
+            0.0
+        } else {
+            (stats.progress_bytes as f32 / stats.total_bytes as f32) * 100.0
+        };
+        Self {
+            id: d.id.map(|x| x as u64).unwrap_or(0),
+            info_hash: d.info_hash,
+            name: d.name,
+            output_folder: d.output_folder,
+            state: stats.state.into(),
+            finished: stats.finished,
+            progress_bytes: stats.progress_bytes,
+            uploaded_bytes: stats.uploaded_bytes,
+            total_bytes: stats.total_bytes,
+            progress_pct,
+            error: stats.error.clone(),
+            files,
+        }
+    }
 }
 
 // librqbit's `Speed.mbps` is misleadingly named — its Display impl prints

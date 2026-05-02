@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use librqbit::api::{ApiTorrentListOpts, TorrentIdOrHash};
@@ -5,7 +6,7 @@ use librqbit::{AddTorrent, Api};
 use tauri::{AppHandle, State};
 
 use crate::settings::{self, AppSettings};
-use crate::types::{AddTorrentResult, SessionStats, TorrentSnapshot};
+use crate::types::{AddTorrentResult, SessionStats, TorrentDetail, TorrentSnapshot};
 
 type CmdResult<T> = Result<T, String>;
 
@@ -99,6 +100,28 @@ pub async fn delete(api: State<'_, Arc<Api>>, id: u64) -> CmdResult<()> {
 #[specta::specta]
 pub fn session_stats(api: State<'_, Arc<Api>>) -> CmdResult<SessionStats> {
     Ok(api.api_session_stats().into())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_torrent_detail(api: State<'_, Arc<Api>>, id: u64) -> CmdResult<TorrentDetail> {
+    let details = api.api_torrent_details(id_to_handle(id)).map_err(err)?;
+    let stats = api.api_stats_v1(id_to_handle(id)).map_err(err)?;
+    Ok(TorrentDetail::from_parts(details, stats))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn set_only_files(
+    api: State<'_, Arc<Api>>,
+    id: u64,
+    file_idxs: Vec<u32>,
+) -> CmdResult<()> {
+    let set: HashSet<usize> = file_idxs.into_iter().map(|x| x as usize).collect();
+    api.api_torrent_action_update_only_files(id_to_handle(id), &set)
+        .await
+        .map_err(err)?;
+    Ok(())
 }
 
 #[tauri::command]

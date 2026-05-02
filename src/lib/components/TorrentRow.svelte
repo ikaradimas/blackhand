@@ -54,10 +54,11 @@
   );
 </script>
 
-<article
+<a
   class="row"
   class:finished={t.finished}
   data-state={t.state}
+  href="/torrent/{t.id}"
 >
   <div class="grid">
     <span
@@ -75,17 +76,17 @@
     <span class="num tnum eta">{fmtEta(t.eta_secs)}</span>
     <span class="actions">
       {#if t.state === "paused"}
-        <button class="action" title="Resume" onclick={() => onresume?.(t.id)}>▶</button>
+        <button class="action" type="button" title="Resume" onclick={(e) => { e.preventDefault(); e.stopPropagation(); onresume?.(t.id); }}>▶</button>
       {:else}
-        <button class="action" title="Pause" onclick={() => onpause?.(t.id)}>❚❚</button>
+        <button class="action" type="button" title="Pause" onclick={(e) => { e.preventDefault(); e.stopPropagation(); onpause?.(t.id); }}>❚❚</button>
       {/if}
-      <button class="action" title="Open folder" aria-label="Open folder" onclick={openFolder}>
+      <button class="action" type="button" title="Open folder" aria-label="Open folder" onclick={(e) => { e.preventDefault(); e.stopPropagation(); openFolder(); }}>
         <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
           <path d="M1.5 3a.5.5 0 0 1 .5-.5h4l1.5 1.5h6.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V3Zm1 .5v9h11v-7H7.293L5.793 4H2.5Z"/>
         </svg>
       </button>
-      <button class="action" title="Remove (keep files)" onclick={() => onforget?.(t.id)}>×</button>
-      <button class="action danger" title="Delete + remove files" onclick={() => ondelete?.(t.id)}>⌫</button>
+      <button class="action" type="button" title="Remove (keep files)" onclick={(e) => { e.preventDefault(); e.stopPropagation(); onforget?.(t.id); }}>×</button>
+      <button class="action danger" type="button" title="Delete + remove files" onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(t.id); }}>⌫</button>
     </span>
   </div>
 
@@ -101,7 +102,7 @@
   {#if t.error}
     <p class="err tnum">{t.error}</p>
   {/if}
-</article>
+</a>
 
 <style>
   .row {
@@ -115,6 +116,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
   }
   .row:hover {
     border-color: var(--accent-cyan);

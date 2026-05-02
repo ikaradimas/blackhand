@@ -13,6 +13,8 @@ export const commands = {
 	forget: (id: number) => typedError<null, string>(__TAURI_INVOKE("forget", { id })),
 	delete: (id: number) => typedError<null, string>(__TAURI_INVOKE("delete", { id })),
 	sessionStats: () => typedError<SessionStats, string>(__TAURI_INVOKE("session_stats")),
+	getTorrentDetail: (id: number) => typedError<TorrentDetail, string>(__TAURI_INVOKE("get_torrent_detail", { id })),
+	setOnlyFiles: (id: number, fileIdxs: number[]) => typedError<null, string>(__TAURI_INVOKE("set_only_files", { id, fileIdxs })),
 	getSettings: () => typedError<AppSettings, string>(__TAURI_INVOKE("get_settings")),
 	saveSettings: (settings: AppSettings) => typedError<null, string>(__TAURI_INVOKE("save_settings", { settings })),
 	restartApp: () => __TAURI_INVOKE<void>("restart_app"),
@@ -54,6 +56,30 @@ export type SessionStats = {
 };
 
 export type SessionStatsEvent = SessionStats;
+
+export type TorrentDetail = {
+	id: number,
+	info_hash: string,
+	name: string | null,
+	output_folder: string,
+	state: TorrentState,
+	finished: boolean,
+	progress_bytes: number,
+	uploaded_bytes: number,
+	total_bytes: number,
+	progress_pct: number,
+	error: string | null,
+	files: TorrentFile[],
+};
+
+export type TorrentFile = {
+	// Position in the torrent's file table — the value used by `set_only_files`.
+	idx: number,
+	name: string,
+	components: string[],
+	length: number,
+	included: boolean,
+};
 
 export type TorrentSnapshot = {
 	torrents: TorrentSummary[],

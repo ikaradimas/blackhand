@@ -108,6 +108,8 @@ fn make_specta_builder() -> Builder<tauri::Wry> {
             commands::forget,
             commands::delete,
             commands::session_stats,
+            commands::get_torrent_detail,
+            commands::set_only_files,
             commands::get_settings,
             commands::save_settings,
             commands::restart_app,
