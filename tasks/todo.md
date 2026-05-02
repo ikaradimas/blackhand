@@ -300,12 +300,12 @@ Pick 2–3 max for a single milestone; don't blanket-add.
 - [x] Set window defaults: 1280×800, min 960×600, dark theme, native decorations, `#07070C` bg
 - [x] Boot smoke test: `pnpm tauri dev` compiles in 1m 03s and launches a window with the BLACKHAND wordmark
 
-### Phase 1 — Engine integration (1–2 days)
-- [ ] Wrap `librqbit::Session` behind a `SessionHandle` actor (Tokio task + mpsc)
-- [ ] Implement `add_magnet`, `add_file`, `list_torrents`, `pause`, `resume`, `remove`
-- [ ] Persistence: pick + create OS data dir, hand it to librqbit
-- [ ] Stats poll loop → emit `torrent:stats` events at 2 Hz
-- [ ] Manual test: add a Linux ISO magnet, confirm progress, pause/resume, remove
+### Phase 1 — Engine integration (1–2 days) — ✅ done 2026-05-02
+- [x] ~~Wrap `librqbit::Session` behind a `SessionHandle` actor~~ — superseded: store `Arc<librqbit::Api>` as Tauri managed state directly (Api is librqbit's purpose-built desktop facade)
+- [x] Implement `add_magnet`, `add_torrent_file`, `list_torrents`, `get_torrent`, `pause`, `resume`, `forget`, `delete`, `session_stats`
+- [x] Persistence: `dirs::data_dir() / "blackhand"`, `SessionPersistenceConfig::Json`, `fastresume: true` — verified via Cmd-Q + relaunch test
+- [x] Stats event loop @ 2 Hz emitting `torrents:snapshot` + `session:stats` (full snapshot, not deltas — fine at hobby scale)
+- [x] Manual test: add → progress → pause/resume/forget/delete → quit → relaunch → resume — all confirmed working
 
 ### Phase 2 — Core UI (2–3 days)
 - [ ] Design tokens (`tokens.css`, `effects.css`)
@@ -363,6 +363,13 @@ If those five hold, ship it.
 ---
 
 ## Review
+
+### 2026-05-02 — Phase 1 complete
+- Engine integration end-to-end: add (magnet), see live stats tick at 2 Hz, pause/resume/forget/delete, persistence survives a full quit+relaunch.
+- Plan §3.1 SessionHandle actor abandoned in favor of `Arc<librqbit::Api>` — see `memories/2026-05-02-phase1-engine-integration.md` for rationale and config details.
+- Frontend currently uses a temporary minimal test UI in `src/routes/+page.svelte`; the real UI is Phase 2 work.
+- App icon updated to cyan + magenta per user request (`memories/2026-05-02-icon-design.md`).
+- Open question carried into Phase 2: do we generate TS types from Rust (ts-rs / similar) or keep hand-written types? Decide when the command surface stabilizes.
 
 ### 2026-05-02 — Phase 0 complete
 - Scaffold committed at `4bacadb`. `pnpm check` clean (0/0/0), `cargo check` clean, `tauri dev` builds in ~1m and launches the window.
