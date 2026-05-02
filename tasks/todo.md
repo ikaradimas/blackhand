@@ -293,12 +293,12 @@ Pick 2–3 max for a single milestone; don't blanket-add.
 
 ## 8. Implementation phases
 
-### Phase 0 — Scaffold (½ day)
-- [ ] `pnpm create tauri-app` → svelte-ts template, name `blackhand`
-- [ ] `git init`, first commit
-- [ ] Add deps: `librqbit`, `tokio`, `serde`, `serde_json`, `thiserror`, `dirs`, `open`, `anyhow`
-- [ ] Set window defaults (1280×800, dark titlebar on macOS, decorations off + custom chrome optional)
-- [ ] Boot smoke test: `pnpm tauri dev` opens a black window with a "BLACKHAND" wordmark
+### Phase 0 — Scaffold (½ day) — ✅ done 2026-05-02
+- [x] `pnpm create tauri-app` → svelte-ts template (SvelteKit SPA mode), name `blackhand`
+- [x] `git init`, first commit (`4bacadb`)
+- [x] Add deps: `librqbit` 8.1, `tokio`, `serde`, `serde_json`, `thiserror`, `anyhow`, `dirs` — used `tauri-plugin-opener` (Tauri-native) instead of the Rust `open` crate
+- [x] Set window defaults: 1280×800, min 960×600, dark theme, native decorations, `#07070C` bg
+- [x] Boot smoke test: `pnpm tauri dev` compiles in 1m 03s and launches a window with the BLACKHAND wordmark
 
 ### Phase 1 — Engine integration (1–2 days)
 - [ ] Wrap `librqbit::Session` behind a `SessionHandle` actor (Tokio task + mpsc)
@@ -364,4 +364,10 @@ If those five hold, ship it.
 
 ## Review
 
-_Append session notes here as work progresses. Don't pre-fill._
+### 2026-05-02 — Phase 0 complete
+- Scaffold committed at `4bacadb`. `pnpm check` clean (0/0/0), `cargo check` clean, `tauri dev` builds in ~1m and launches the window.
+- Two plan deviations, both captured in `memories/2026-05-02-phase0-scaffold-choices.md`:
+  - Used SvelteKit (template default) rather than plain Svelte+Vite — recommended path anyway, no cost.
+  - Swapped the Rust `open` crate for `tauri-plugin-opener` (shipped by the template; cleaner story for "open in player").
+- Minor scaffold fixups: added `@types/node` (SvelteKit's auto-tsconfig wants it), removed a now-stale `@ts-expect-error` in `vite.config.js`, gitignored `.claude/`.
+- Open question deferred to Phase 1: do we use the Tauri commands list from plan §3.3 verbatim, or restructure once we see librqbit's actual API surface? Will decide as part of building the `SessionHandle` actor.
