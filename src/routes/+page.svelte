@@ -2,26 +2,10 @@
   import { commands } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import { torrents } from "$lib/stores/torrents.svelte";
+  import { ui } from "$lib/stores/ui.svelte";
   import TorrentRow from "$lib/components/TorrentRow.svelte";
 
-  let magnet = $state("");
-  let busy = $state(false);
   let lastError = $state<string | null>(null);
-
-  async function addMagnet(e: Event) {
-    e.preventDefault();
-    if (!magnet.trim()) return;
-    busy = true;
-    lastError = null;
-    try {
-      await unwrap(commands.addMagnet(magnet.trim()));
-      magnet = "";
-    } catch (err) {
-      lastError = String(err);
-    } finally {
-      busy = false;
-    }
-  }
 
   async function act(action: "pause" | "resume" | "forget" | "delete", id: number) {
     lastError = null;
@@ -33,26 +17,14 @@
   }
 </script>
 
-<form class="add-row" onsubmit={addMagnet}>
-  <input
-    type="text"
-    placeholder="paste a magnet: link"
-    bind:value={magnet}
-    disabled={busy}
-  />
-  <button type="submit" class="primary" disabled={busy || !magnet.trim()}>
-    {busy ? "…" : "+ Add"}
-  </button>
-</form>
-
 {#if lastError}
   <p class="err tnum">{lastError}</p>
 {/if}
 
 {#if torrents.list.length === 0}
   <div class="empty">
-    <p>no torrents yet</p>
-    <p class="dim">paste a magnet link above</p>
+    <p class="empty-title">no torrents yet</p>
+    <p class="dim">click <button class="empty-cta" onclick={() => ui.openAdd()}>+ Add</button> in the header, or drop a .torrent file</p>
   </div>
 {:else}
   <header class="col-headers tnum">
@@ -80,63 +52,6 @@
 {/if}
 
 <style>
-  .add-row {
-    display: flex;
-    gap: var(--sp-2);
-    margin-bottom: var(--sp-5);
-  }
-
-  input[type="text"] {
-    flex: 1;
-    padding: var(--sp-2) var(--sp-3);
-    background: var(--bg-1);
-    border: 1px solid var(--bg-3);
-    color: var(--fg-0);
-    border-radius: var(--radius-md);
-    font-family: var(--font-mono);
-    font-size: var(--fs-sm);
-    transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
-  }
-  input[type="text"]:focus {
-    outline: none;
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 1px var(--accent-cyan), var(--glow-cyan-sm);
-  }
-  input[type="text"]::placeholder {
-    color: var(--fg-2);
-  }
-
-  button {
-    background: var(--bg-2);
-    color: var(--fg-0);
-    border: 1px solid var(--bg-3);
-    border-radius: var(--radius-md);
-    padding: var(--sp-2) var(--sp-4);
-    font-size: var(--fs-sm);
-    cursor: pointer;
-    transition: border-color var(--motion-fast), color var(--motion-fast);
-  }
-  button:hover:not(:disabled) {
-    border-color: var(--accent-cyan);
-    color: var(--accent-cyan);
-  }
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  button.primary {
-    background: var(--accent-magenta);
-    border-color: var(--accent-magenta);
-    color: var(--fg-0);
-    box-shadow: var(--glow-magenta-sm);
-  }
-  button.primary:hover:not(:disabled) {
-    background: var(--accent-magenta-hover);
-    border-color: var(--accent-magenta-hover);
-    box-shadow: var(--glow-magenta-md);
-  }
-
   .err {
     color: var(--err);
     font-size: var(--fs-xs);
@@ -168,11 +83,31 @@
   .empty {
     text-align: center;
     padding: var(--sp-8) 0;
-    color: var(--fg-1);
   }
-  .empty .dim {
+  .empty-title {
+    color: var(--fg-1);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    margin: 0 0 var(--sp-3);
+  }
+  .dim {
     color: var(--fg-2);
     font-size: var(--fs-xs);
-    margin-top: var(--sp-2);
+  }
+  .empty-cta {
+    background: transparent;
+    border: 1px solid var(--accent-magenta);
+    color: var(--accent-magenta);
+    border-radius: var(--radius-sm);
+    padding: 2px var(--sp-2);
+    font-size: var(--fs-xs);
+    font-family: inherit;
+    cursor: pointer;
+    margin: 0 4px;
+  }
+  .empty-cta:hover {
+    background: var(--accent-magenta);
+    color: var(--fg-0);
   }
 </style>

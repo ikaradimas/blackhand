@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
 
   import AppHeader from "$lib/components/AppHeader.svelte";
+  import AddTorrentModal from "$lib/components/AddTorrentModal.svelte";
   import { session } from "$lib/stores/session.svelte";
   import { torrents } from "$lib/stores/torrents.svelte";
 
@@ -20,6 +21,7 @@
 <main>
   {@render children()}
 </main>
+<AddTorrentModal />
 
 <style>
   main {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import StatPill from "$lib/components/StatPill.svelte";
   import { session } from "$lib/stores/session.svelte";
+  import { ui } from "$lib/stores/ui.svelte";
 
   function fmtBytes(n: number): string {
     if (!Number.isFinite(n)) return "—";
@@ -27,20 +28,23 @@
     <span class="dim">// torrent.client</span>
   </div>
 
-  <div class="stats">
+  <div class="right">
     {#if session.stats}
-      <StatPill
-        label="↓"
-        value={fmtBps(session.stats.down_bps)}
-        accent={session.stats.down_bps > 0 ? "magenta" : "neutral"}
-      />
-      <StatPill
-        label="↑"
-        value={fmtBps(session.stats.up_bps)}
-        accent={session.stats.up_bps > 0 ? "cyan" : "neutral"}
-      />
-      <StatPill label="peers" value={String(session.stats.peers_live)} />
+      <div class="stats">
+        <StatPill
+          label="↓"
+          value={fmtBps(session.stats.down_bps)}
+          accent={session.stats.down_bps > 0 ? "magenta" : "neutral"}
+        />
+        <StatPill
+          label="↑"
+          value={fmtBps(session.stats.up_bps)}
+          accent={session.stats.up_bps > 0 ? "cyan" : "neutral"}
+        />
+        <StatPill label="peers" value={String(session.stats.peers_live)} />
+      </div>
     {/if}
+    <button class="add" type="button" onclick={() => ui.openAdd()}>+ Add</button>
   </div>
 </header>
 
@@ -90,8 +94,32 @@
     margin-left: var(--sp-2);
   }
 
+  .right {
+    display: flex;
+    gap: var(--sp-3);
+    align-items: center;
+  }
+
   .stats {
     display: flex;
     gap: var(--sp-2);
+  }
+
+  .add {
+    background: var(--accent-magenta);
+    border: 1px solid var(--accent-magenta);
+    color: var(--fg-0);
+    border-radius: var(--radius-md);
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-sm);
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: var(--glow-magenta-sm);
+    transition: background var(--motion-fast), box-shadow var(--motion-fast);
+  }
+  .add:hover {
+    background: var(--accent-magenta-hover);
+    border-color: var(--accent-magenta-hover);
+    box-shadow: var(--glow-magenta-md);
   }
 </style>
