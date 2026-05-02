@@ -367,6 +367,35 @@ If those five hold, ship it.
 
 ## Review
 
+### 2026-05-02 — Phase 5 complete · v0.2.0 shipped
+
+User-picked v0.2 scope: UI polish + detail panel polish + categories. All three landed.
+
+**5.1 — UI polish**
+- Toast layer (`toasts.svelte.ts` + `ToastStack`); auto-dismiss; kind-tagged left borders.
+- Loading skeleton row matching `TorrentRow`'s grid.
+- Polished empty state with magenta halo + ⌘N hint.
+- Form-action errors **stay inline** (Add / Settings / Remove); toasts for ambient/async outcomes only — design rule going forward.
+
+**5.2 — Detail panel polish**
+- Per-file ▷ Open + Reveal-in-Finder buttons.
+- Trackers card (read-only — librqbit doesn't expose force-reannounce on its public Api).
+- Peer list **blocked at the engine** (`PeerStatsFilter` not re-exported by librqbit). Documented in the Phase 5 memo; per-torrent peer count is still available.
+
+**5.3 — Categories**
+- Backend `CategoryStore` persists `categories.json` keyed by info_hash → category name. Survives forget+re-add.
+- `TorrentSummary` includes `category` so snapshots already carry it.
+- Sidebar filter on the dashboard with `All / (uncategorized) / each category` + counts. Active filter shows a magenta rim.
+- Detail-page Info card has a Category text input (datalist of existing names + free-form for new) with Apply.
+
+10 commits land Phase 5. Total project commits: 38. Memos: 14.
+
+What's left for v0.3 candidates:
+- Peer list (file upstream issue on librqbit to re-export PeerStatsFilter)
+- Watch folder, bandwidth scheduler, RSS, search, Tor/I2P from §7
+- Category rename/delete from the UI
+- Sign + notarize wiring (still user-action items)
+
 ### 2026-05-02 — Phase 4 complete · v0.1.0 shipped
 
 5 commits cover Phase 4: About+version+shortcuts → logging → README+build verification → close-out.
