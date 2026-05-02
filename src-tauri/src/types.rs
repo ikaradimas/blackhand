@@ -30,6 +30,7 @@ pub struct TorrentSummary {
     pub id: u64,
     pub info_hash: String,
     pub name: Option<String>,
+    pub output_folder: String,
     pub state: TorrentState,
     pub finished: bool,
     pub progress_bytes: u64,
@@ -129,6 +130,7 @@ impl From<TorrentListResponse> for TorrentSnapshot {
                     id,
                     info_hash: t.info_hash,
                     name: t.name,
+                    output_folder: t.output_folder,
                     state: s
                         .map(|s| s.state.into())
                         .unwrap_or(TorrentState::Initializing),

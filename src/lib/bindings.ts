@@ -65,6 +65,7 @@ export type TorrentSummary = {
 	id: number,
 	info_hash: string,
 	name: string | null,
+	output_folder: string,
 	state: TorrentState,
 	finished: boolean,
 	progress_bytes: number,

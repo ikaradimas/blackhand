@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { openPath } from "@tauri-apps/plugin-opener";
+
   import type { TorrentSummary } from "$lib/bindings";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import PixelMark from "$lib/components/PixelMark.svelte";
@@ -12,6 +14,14 @@
   };
 
   let { t, onpause, onresume, onforget, ondelete }: Props = $props();
+
+  async function openFolder() {
+    try {
+      await openPath(t.output_folder);
+    } catch (e) {
+      console.error("openPath failed:", e);
+    }
+  }
 
   function fmtBytes(n: number): string {
     if (!Number.isFinite(n)) return "—";
@@ -69,6 +79,11 @@
       {:else}
         <button class="action" title="Pause" onclick={() => onpause?.(t.id)}>❚❚</button>
       {/if}
+      <button class="action" title="Open folder" aria-label="Open folder" onclick={openFolder}>
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
+          <path d="M1.5 3a.5.5 0 0 1 .5-.5h4l1.5 1.5h6.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V3Zm1 .5v9h11v-7H7.293L5.793 4H2.5Z"/>
+        </svg>
+      </button>
       <button class="action" title="Remove (keep files)" onclick={() => onforget?.(t.id)}>×</button>
       <button class="action danger" title="Delete + remove files" onclick={() => ondelete?.(t.id)}>⌫</button>
     </span>
@@ -108,10 +123,10 @@
 
   /* Column layout: state · name (flex) · size · down · up · peers · eta · actions
    * The actions column must be a fixed width here AND in the page-level
-   * column header so both grids align. 3 × 28px buttons + 2 × 2px gaps = 88px. */
+   * column header so both grids align. 4 × 28px buttons + 3 × 2px gaps = 118px. */
   .grid {
     display: grid;
-    grid-template-columns: 18px minmax(0, 1fr) 80px 110px 110px 60px 80px 96px;
+    grid-template-columns: 18px minmax(0, 1fr) 80px 110px 110px 60px 80px 124px;
     gap: var(--sp-3);
     align-items: center;
     font-size: var(--fs-sm);
