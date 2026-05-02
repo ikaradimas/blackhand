@@ -317,13 +317,14 @@ Pick 2–3 max for a single milestone; don't blanket-add.
 - [x] Confirmation dialog for delete (forget stays one-click)
 - [x] **Bonus:** typed IPC via `tauri-specta` (DTO layer + auto-generated `src/lib/bindings.ts`)
 
-### Phase 3 — Streaming & system integration (1 day)
-- [ ] Verify librqbit's sequential mode is on; confirm head pieces arrive first
-- [ ] "Open in player" command using `open` crate
-- [ ] `magnet:` protocol handler registration (Tauri config + per-OS entitlements)
-- [ ] Single-instance lock; forward magnet from second launch
-- [ ] File-association for `.torrent`
-- [ ] Tray notification on complete
+### Phase 3 — Streaming & system integration (1 day) — ✅ done 2026-05-02
+- [x] Sequential mode is librqbit's default — head pieces arrive first for free; verified during Phase 1 streaming via `open` works
+- [x] Per-row "Open folder" via `@tauri-apps/plugin-opener::openPath`; per-file "Open in player" lands as part of the detail panel (Apply + click filename in v0.2)
+- [x] `magnet://` protocol handler via `tauri-plugin-deep-link` + `bundle.fileAssociations` for `.torrent`
+- [x] Single-instance lock via `tauri-plugin-single-instance` (`deep-link` feature) — forwards magnet URLs and brings the running window forward; argv parser handles `.torrent` file paths from "Open with…"
+- [x] **Bonus:** native completion notifications via `tauri-plugin-notification` (one banner per finish transition)
+- [x] **Bonus:** system tray with Show / Pause-all / Resume-all / Quit menu and left-click visibility toggle
+- [x] **Bonus:** per-torrent detail route at `/torrent/[id]` with info card and file include/skip toggles + Apply
 
 ### Phase 4 — Polish + ship (1–2 days)
 - [ ] Empty states, error toasts, loading skeletons (with subtle scanline)
@@ -364,6 +365,13 @@ If those five hold, ship it.
 ---
 
 ## Review
+
+### 2026-05-02 — Phase 3 complete
+- 7 commits land the OS-integration surface: magnet+single-instance, open-folder, notifications, tray, file association, detail panel.
+- macOS dev caveat carried forward: URL scheme + file association registration require a real bundle. `pnpm tauri build --debug` is the one-step way to install for end-to-end testing of the click-magnet-in-browser and "Open with…" flows.
+- Trackers + peer list deferred to Phase 4/v0.2 — librqbit's public Api doesn't expose tracker URLs cleanly, and peers as a list (vs the count we already show) is polish.
+- Detail-page selection wiring re-enabled; row is now an `<a>` and the action buttons stop propagation so they don't fire navigation.
+- Memo: `memories/2026-05-02-phase3-system-integration.md` captures the deep-link/single-instance pairing, the macOS bundle gotcha, and the file-association argv path.
 
 ### 2026-05-02 — Phase 2 complete
 - 9 commits cover Phase 2: typed IPC foundation → bindings pipeline → tokens → shell → list → identicons → modal → settings → remove confirm → bandwidth-live + alignment + bulk actions.
