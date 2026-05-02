@@ -45,6 +45,8 @@ pnpm tauri dev
 
 First run takes ~1–2 min while `librqbit` and friends compile; incremental rebuilds are fast (~10–15 s).
 
+> **Windows note:** if `pnpm install` fails inside `esbuild`'s postinstall with `"The system cannot find the path specified"`, run `pnpm install --ignore-scripts` instead. This is a pnpm 10 quirk — `.npmrc`'s `ignore-scripts=true` is read but not enforced for dependency *build* scripts on Windows. esbuild's postinstall is just a symlink convenience; the native binary still installs via the platform-specific optional dep, and esbuild's runtime locates it without it.
+
 ### Production build
 
 ```bash
