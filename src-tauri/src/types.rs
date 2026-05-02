@@ -223,3 +223,103 @@ impl From<TorrentListResponse> for TorrentSnapshot {
         Self::from_response(resp, None)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mibps_to_bps_zero() {
+        assert_eq!(mibps_to_bps(0.0), 0);
+    }
+
+    #[test]
+    fn mibps_to_bps_one_mib_is_one_mebibyte_per_second() {
+        // Regression for the librqbit Speed.mbps misreading: it's MiB/s,
+        // so 1.0 ↦ 1 MiB = 1_048_576 B.
+        assert_eq!(mibps_to_bps(1.0), 1024 * 1024);
+    }
+
+    #[test]
+    fn mibps_to_bps_handles_fractions() {
+        assert_eq!(mibps_to_bps(0.5), 512 * 1024);
+    }
+
+    #[test]
+    fn mibps_to_bps_clamps_negative_to_zero() {
+        assert_eq!(mibps_to_bps(-1.0), 0);
+    }
+
+    #[test]
+    fn mibps_to_bps_clamps_nan_and_inf_to_zero() {
+        assert_eq!(mibps_to_bps(f64::NAN), 0);
+        assert_eq!(mibps_to_bps(f64::INFINITY), 0);
+        assert_eq!(mibps_to_bps(f64::NEG_INFINITY), 0);
+    }
+
+    #[test]
+    fn torrent_summary_serde_round_trip_with_category() {
+        let s = TorrentSummary {
+            id: 42,
+            info_hash: "abc123".into(),
+            name: Some("Movie".into()),
+            output_folder: "/tmp".into(),
+            state: TorrentState::Live,
+            finished: false,
+            progress_bytes: 100,
+            uploaded_bytes: 0,
+            total_bytes: 1000,
+            progress_pct: 10.0,
+            down_bps: 2048,
+            up_bps: 512,
+            peers_live: 3,
+            eta_secs: Some(60),
+            error: None,
+            category: Some("movies".into()),
+        };
+        let json = serde_json::to_string(&s).unwrap();
+        let back: TorrentSummary = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.id, s.id);
+        assert_eq!(back.info_hash, s.info_hash);
+        assert_eq!(back.category, s.category);
+        assert_eq!(back.eta_secs, s.eta_secs);
+        assert_eq!(back.state, s.state);
+    }
+
+    #[test]
+    fn torrent_summary_serde_round_trip_without_category() {
+        let json = r#"{
+            "id": 1,
+            "info_hash": "hash",
+            "name": null,
+            "output_folder": "/x",
+            "state": "initializing",
+            "finished": false,
+            "progress_bytes": 0,
+            "uploaded_bytes": 0,
+            "total_bytes": 0,
+            "progress_pct": 0.0,
+            "down_bps": 0,
+            "up_bps": 0,
+            "peers_live": 0,
+            "eta_secs": null,
+            "error": null,
+            "category": null
+        }"#;
+        let s: TorrentSummary = serde_json::from_str(json).unwrap();
+        assert_eq!(s.category, None);
+        assert_eq!(s.state, TorrentState::Initializing);
+    }
+
+    #[test]
+    fn torrent_state_serializes_as_snake_case() {
+        for (state, expected) in [
+            (TorrentState::Initializing, "\"initializing\""),
+            (TorrentState::Live, "\"live\""),
+            (TorrentState::Paused, "\"paused\""),
+            (TorrentState::Error, "\"error\""),
+        ] {
+            assert_eq!(serde_json::to_string(&state).unwrap(), expected);
+        }
+    }
+}

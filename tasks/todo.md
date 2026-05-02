@@ -337,6 +337,33 @@ Pick 2–3 max for a single milestone; don't blanket-add.
 - [x] AppImage + `.deb` for Linux — `bundle.targets: "all"` produces them; build is reproducible from source
 - [x] First-release tag `v0.1.0`
 
+### Phase 6 — Tests (post-ship hardening) — ✅ done 2026-05-03
+
+Goal: lock in the pure logic that's already shipping so future changes don't silently break it. Not full coverage — high-ROI only.
+
+Backend (`cargo test`) — **24 new tests, 25 total**:
+- [x] Refactor: extract pure logic from `CategoryStore` onto `CategoryData` so it's testable without filesystem
+- [x] `settings.rs`: `kbps_to_nz_bps` (the 10× bug we hit), defaults, JSON round-trip
+- [x] `categories.rs`: set/unassign, alphabetical insert, dedup, `list_with_counts` tallies, orphan categories
+- [x] `types.rs`: `mibps_to_bps` (the MiB/s bug), DTO serde round-trip, `TorrentState` snake_case wire format
+- Skipped: `commands.rs` / `session.rs` / `stats.rs` — would need a live `librqbit::Api` harness
+
+Frontend (`pnpm test:run` via Vitest + @testing-library/svelte + jsdom) — **55 tests across 8 files**:
+- [x] Set up `vitest`, `@testing-library/svelte`, `jsdom`, `vitest.config.ts`, `pnpm test` / `pnpm test:run` scripts
+- [x] `api.ts` `unwrap` (ok / error / native rejection)
+- [x] `categories.svelte.ts` sentinel + filter behavior, refresh, assign
+- [x] `ui.svelte.ts` modal-state mutators
+- [x] `PixelMark` — deterministic per hash, vertical mirror, 0..4 grid bounds
+- [x] `ProgressBar` — 32-cell default, clamping, custom cell count, finished/paused attrs
+- [x] `Modal` — title/children render, close button, backdrop click, body click ignored (jsdom dialog polyfill in `src/test-setup.ts`)
+- [x] `AddTorrentModal` — open/close, magnet validation enables Add, success closes, failure inline errors, .torrent extension check, error clears on input
+- [x] `RemoveConfirmModal` — target rendering, cancel without delete, confirm calls delete, inline error on failure, error clears on new target
+- Skipped: `SettingsModal` (form-heavy), `AppHeader`/`StatPill`/`SkeletonRow` (visual-only), routes (need Tauri runtime mocks)
+
+Out of scope: E2E (`tauri-driver` / Playwright), visual regression, integration tests requiring a real BitTorrent session.
+
+Memo: `memories/2026-05-03-phase6-tests.md`.
+
 Total realistic estimate for a focused solo dev: **~7–10 working days** to v0.1, plus signing/distribution friction.
 
 ---
@@ -366,6 +393,18 @@ If those five hold, ship it.
 ---
 
 ## Review
+
+### 2026-05-03 — Phase 6 complete (test infrastructure)
+
+Goal was to lock in the pure logic shipping in v0.2 so future changes don't silently break it. 80 tests total, 0 failures.
+
+**Backend** — 24 new `#[cfg(test)]` tests across `categories.rs`, `settings.rs`, `types.rs`. Notable: regressions for the two real bugs we shipped — `kbps_to_nz_bps` (10× bug) and `mibps_to_bps` (MiB/s vs Mb/s bug) — would now be caught pre-merge. Refactored `CategoryStore` to delegate logic to `CategoryData` so it's filesystem-free; public API unchanged.
+
+**Frontend** — Vitest + `@testing-library/svelte` + jsdom infrastructure added (`vitest.config.ts`, `src/test-setup.ts`, `pnpm test` / `pnpm test:run` scripts). 55 tests across `api.ts`, `ui` / `categories` stores, and 5 components. Two infra gotchas worth remembering:
+- jsdom 29 doesn't implement `HTMLDialogElement.showModal` / `close` — polyfilled in `test-setup.ts`.
+- vitest's `include` glob is `*.test.ts`, not `*.test.svelte.ts`. The runic store modules don't need their *test files* to use the rune extension.
+
+Memo: `memories/2026-05-03-phase6-tests.md`.
 
 ### 2026-05-02 — Phase 5 complete · v0.2.0 shipped
 
