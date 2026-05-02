@@ -22,6 +22,33 @@ fn add_magnet_url(api: Arc<Api>, url: String) {
     });
 }
 
+/// Scan an argv-like iterator for `.torrent` file paths and add them.
+/// Used both at cold start (`std::env::args`) and when single-instance
+/// hands us a second-launch argv from a "Open with…" file association.
+fn add_torrent_files_from_argv<I, S>(api: Arc<Api>, args: I)
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    for arg in args {
+        let path = arg.as_ref().to_string();
+        if !path.to_lowercase().ends_with(".torrent") {
+            continue;
+        }
+        let api = api.clone();
+        tauri::async_runtime::spawn(async move {
+            match AddTorrent::from_local_filename(&path) {
+                Ok(add) => {
+                    if let Err(e) = api.api_add_torrent(add, None).await {
+                        eprintln!("file-association add failed for {path}: {e:#}");
+                    }
+                }
+                Err(e) => eprintln!("read torrent file {path} failed: {e:#}"),
+            }
+        });
+    }
+}
+
 fn toggle_main_window(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
         let visible = w.is_visible().unwrap_or(false);
@@ -108,14 +135,15 @@ pub fn run() {
     #[cfg(desktop)]
     {
         tauri_builder = tauri_builder.plugin(tauri_plugin_single_instance::init(
-            |app, _argv, _cwd| {
+            |app, argv, _cwd| {
                 // Bring the running instance forward; the deep-link plugin
-                // (with the "deep-link" feature) forwards the URL through
-                // its own on_open_url channel, so we don't need to parse argv here.
-                if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.unminimize();
-                    let _ = w.show();
-                    let _ = w.set_focus();
+                // (with the "deep-link" feature) forwards magnet URLs through
+                // its own on_open_url channel, so we don't parse those here.
+                show_main_window(app);
+                // .torrent file paths from "Open with…" come through as plain
+                // argv entries — process them ourselves.
+                if let Some(api) = app.try_state::<Arc<Api>>() {
+                    add_torrent_files_from_argv(api.inner().clone(), argv);
                 }
             },
         ));
@@ -144,6 +172,10 @@ pub fn run() {
                     add_magnet_url(api.clone(), url.to_string());
                 }
             }
+
+            // Cold-start .torrent file paths (app launched via "Open with…").
+            // Skip arg 0 (program name).
+            add_torrent_files_from_argv(api.clone(), std::env::args().skip(1));
 
             // Runtime deep links (already running, OS hands us another URL).
             let api_for_cb = api.clone();
