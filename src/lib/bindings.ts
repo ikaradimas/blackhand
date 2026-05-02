@@ -15,6 +15,7 @@ export const commands = {
 	sessionStats: () => typedError<SessionStats, string>(__TAURI_INVOKE("session_stats")),
 	getTorrentDetail: (id: number) => typedError<TorrentDetail, string>(__TAURI_INVOKE("get_torrent_detail", { id })),
 	setOnlyFiles: (id: number, fileIdxs: number[]) => typedError<null, string>(__TAURI_INVOKE("set_only_files", { id, fileIdxs })),
+	getTrackers: (id: number) => typedError<string[], string>(__TAURI_INVOKE("get_trackers", { id })),
 	getSettings: () => typedError<AppSettings, string>(__TAURI_INVOKE("get_settings")),
 	saveSettings: (settings: AppSettings) => typedError<null, string>(__TAURI_INVOKE("save_settings", { settings })),
 	restartApp: () => __TAURI_INVOKE<void>("restart_app"),

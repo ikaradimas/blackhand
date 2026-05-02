@@ -126,6 +126,20 @@ pub async fn set_only_files(
 
 #[tauri::command]
 #[specta::specta]
+pub fn get_trackers(api: State<'_, Arc<Api>>, id: u64) -> CmdResult<Vec<String>> {
+    let handle = api.mgr_handle(id_to_handle(id)).map_err(err)?;
+    let mut urls: Vec<String> = handle
+        .shared()
+        .trackers
+        .iter()
+        .map(|u| u.to_string())
+        .collect();
+    urls.sort();
+    Ok(urls)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn get_settings() -> CmdResult<AppSettings> {
     settings::load().map_err(err)
 }

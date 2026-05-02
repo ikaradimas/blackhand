@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { page } from "$app/state";
-  import { openPath } from "@tauri-apps/plugin-opener";
+  import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
+  import { join } from "@tauri-apps/api/path";
 
   import { commands, type TorrentDetail, type TorrentFile } from "$lib/bindings";
   import { unwrap } from "$lib/api";
@@ -12,6 +13,7 @@
   let id = $derived(Number(page.params.id));
   let detail = $state<TorrentDetail | null>(null);
   let files = $state<TorrentFile[]>([]);
+  let trackers = $state<string[]>([]);
   let loadFailed = $state(false);
   let savingFiles = $state(false);
   let timer: ReturnType<typeof setInterval> | null = null;
@@ -40,8 +42,37 @@
 
   onMount(() => {
     refresh();
+    loadTrackers();
     timer = setInterval(refresh, 1000);
   });
+
+  async function loadTrackers() {
+    try {
+      trackers = await unwrap(commands.getTrackers(id));
+    } catch {
+      // tolerable; just leaves the list empty
+    }
+  }
+
+  async function openFile(f: TorrentFile) {
+    if (!detail) return;
+    try {
+      const full = await join(detail.output_folder, f.name);
+      await openPath(full);
+    } catch (e) {
+      toasts.error(`couldn't open file: ${e}`);
+    }
+  }
+
+  async function revealFile(f: TorrentFile) {
+    if (!detail) return;
+    try {
+      const full = await join(detail.output_folder, f.name);
+      await revealItemInDir(full);
+    } catch (e) {
+      toasts.error(`couldn't reveal file: ${e}`);
+    }
+  }
   onDestroy(() => {
     if (timer) clearInterval(timer);
   });
@@ -165,16 +196,53 @@
         <span></span>
         <span class="hd-name">PATH</span>
         <span class="hd-num">SIZE</span>
+        <span></span>
       </header>
       {#each files as f (f.idx)}
-        <label class="file-row">
-          <input type="checkbox" bind:checked={f.included} disabled={savingFiles} />
+        <div class="file-row">
+          <label class="file-pick">
+            <input type="checkbox" bind:checked={f.included} disabled={savingFiles} />
+          </label>
           <span class="file-name">{f.name}</span>
           <span class="tnum file-size">{fmtBytes(f.length)}</span>
-        </label>
+          <span class="file-actions">
+            <button
+              type="button"
+              class="action"
+              title="Open in default app"
+              aria-label="Open in default app"
+              onclick={() => openFile(f)}
+            >▷</button>
+            <button
+              type="button"
+              class="action"
+              title="Reveal in file manager"
+              aria-label="Reveal in file manager"
+              onclick={() => revealFile(f)}
+            >
+              <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true">
+                <path d="M1.5 3a.5.5 0 0 1 .5-.5h4l1.5 1.5h6.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V3Zm1 .5v9h11v-7H7.293L5.793 4H2.5Z"/>
+              </svg>
+            </button>
+          </span>
+        </div>
       {/each}
     </div>
   </section>
+
+  {#if trackers.length > 0}
+    <section class="card">
+      <header class="card-hd">
+        <h2>Trackers</h2>
+        <span class="dim tnum">{trackers.length}</span>
+      </header>
+      <ul class="tracker-list">
+        {#each trackers as url (url)}
+          <li class="tracker tnum">{url}</li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
 {/if}
 
 <style>
@@ -366,7 +434,7 @@
   }
   .file-headers {
     display: grid;
-    grid-template-columns: 22px minmax(0, 1fr) 100px;
+    grid-template-columns: 22px minmax(0, 1fr) 100px 64px;
     gap: var(--sp-3);
     padding: 0 var(--sp-2) var(--sp-2);
     font-size: var(--fs-xs);
@@ -379,18 +447,22 @@
 
   .file-row {
     display: grid;
-    grid-template-columns: 22px minmax(0, 1fr) 100px;
+    grid-template-columns: 22px minmax(0, 1fr) 100px 64px;
     gap: var(--sp-3);
     align-items: center;
     padding: 6px var(--sp-2);
     border-bottom: 1px solid rgba(35, 35, 54, 0.4);
-    cursor: pointer;
     font-size: var(--fs-sm);
   }
   .file-row:hover {
     background: rgba(8, 247, 254, 0.04);
   }
-  .file-row input[type="checkbox"] {
+  .file-pick {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .file-pick input[type="checkbox"] {
     accent-color: var(--accent-magenta);
     cursor: pointer;
     margin: 0;
@@ -406,5 +478,50 @@
     color: var(--fg-1);
     text-align: right;
     font-size: var(--fs-xs);
+  }
+  .file-actions {
+    display: flex;
+    gap: 2px;
+    justify-content: flex-end;
+  }
+  .action {
+    background: transparent;
+    border: 1px solid var(--bg-3);
+    color: var(--fg-1);
+    border-radius: var(--radius-sm);
+    width: 26px;
+    height: 22px;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--fs-xs);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color var(--motion-fast), color var(--motion-fast);
+  }
+  .action:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+
+  .tracker-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    max-height: 30vh;
+    overflow-y: auto;
+  }
+  .tracker {
+    color: var(--fg-1);
+    font-size: var(--fs-xs);
+    padding: 4px var(--sp-2);
+    background: var(--bg-1);
+    border: 1px solid rgba(35, 35, 54, 0.6);
+    border-radius: var(--radius-sm);
+    overflow-wrap: anywhere;
   }
 </style>
