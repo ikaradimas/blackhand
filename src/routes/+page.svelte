@@ -1,50 +1,39 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
-  import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { onDestroy, onMount } from "svelte";
 
-  type TorrentStats = {
-    state: string;
-    progress_bytes: number;
-    total_bytes: number;
-    finished: boolean;
-    live?: {
-      down_speed?: { mbps: number };
-      up_speed?: { mbps: number };
-      snapshot?: { peer_stats?: { live: number } };
-    };
-  };
+  import { commands, events, type SessionStats, type TorrentSummary } from "$lib/bindings";
+  import { unwrap } from "$lib/api";
 
-  type TorrentDetails = {
-    id: number;
-    info_hash: string;
-    name: string | null;
-    output_folder: string;
-    stats?: TorrentStats;
-  };
-
-  type Snapshot = { torrents: TorrentDetails[] };
-
-  let torrents = $state<TorrentDetails[]>([]);
+  let torrents = $state<TorrentSummary[]>([]);
+  let session = $state<SessionStats | null>(null);
   let magnet = $state("");
   let busy = $state(false);
   let lastError = $state<string | null>(null);
-  let unlisten: UnlistenFn | null = null;
+  let unlistens: Array<() => void> = [];
 
   onMount(async () => {
-    unlisten = await listen<Snapshot>("torrents:snapshot", (event) => {
-      torrents = event.payload.torrents;
-    });
+    unlistens.push(
+      await events.torrentsSnapshotEvent.listen((e) => {
+        torrents = e.payload.torrents;
+      }),
+    );
+    unlistens.push(
+      await events.sessionStatsEvent.listen((e) => {
+        session = e.payload;
+      }),
+    );
+
     try {
-      const initial = await invoke<Snapshot>("list_torrents");
+      const initial = await unwrap(commands.listTorrents());
       torrents = initial.torrents;
+      session = await unwrap(commands.sessionStats());
     } catch (e) {
       lastError = String(e);
     }
   });
 
   onDestroy(() => {
-    unlisten?.();
+    for (const u of unlistens) u();
   });
 
   async function addMagnet(e: Event) {
@@ -53,7 +42,7 @@
     busy = true;
     lastError = null;
     try {
-      await invoke("add_magnet", { uri: magnet.trim() });
+      await unwrap(commands.addMagnet(magnet.trim()));
       magnet = "";
     } catch (err) {
       lastError = String(err);
@@ -62,10 +51,10 @@
     }
   }
 
-  async function call(cmd: string, id: number) {
+  async function act(action: "pause" | "resume" | "forget" | "delete", id: number) {
     lastError = null;
     try {
-      await invoke(cmd, { id });
+      await unwrap(commands[action](id));
     } catch (err) {
       lastError = String(err);
     }
@@ -83,16 +72,35 @@
     return `${v.toFixed(v < 10 ? 2 : 1)} ${u[i]}`;
   }
 
-  function pct(s?: TorrentStats): number {
-    if (!s || !s.total_bytes) return 0;
-    return Math.min(100, (s.progress_bytes / s.total_bytes) * 100);
+  function fmtBps(bps: number): string {
+    return `${fmtBytes(bps)}/s`;
+  }
+
+  function fmtEta(secs: number | null): string {
+    if (secs === null || !Number.isFinite(secs)) return "—";
+    if (secs < 60) return `${secs}s`;
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    if (m < 60) return `${m}m ${s.toString().padStart(2, "0")}s`;
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    return `${h}h ${mm.toString().padStart(2, "0")}m`;
   }
 </script>
 
 <main class="page">
   <header>
-    <h1>BLACKHAND <span class="dim">// torrent.client</span></h1>
-    <p class="subtle">Phase 1 integration test — temporary UI</p>
+    <div class="title">
+      <h1>BLACKHAND <span class="dim">// torrent.client</span></h1>
+      {#if session}
+        <div class="globals">
+          <span><span class="dim">↓</span> {fmtBps(session.down_bps)}</span>
+          <span><span class="dim">↑</span> {fmtBps(session.up_bps)}</span>
+          <span><span class="dim">peers</span> {session.peers_live}</span>
+        </div>
+      {/if}
+    </div>
+    <p class="subtle">Phase 2.3 — typed bindings via tauri-specta</p>
   </header>
 
   <form class="add-row" onsubmit={addMagnet}>
@@ -116,29 +124,31 @@
       <p class="subtle empty">no torrents yet</p>
     {:else}
       {#each torrents as t (t.id)}
-        {@const s = t.stats}
-        {@const p = pct(s)}
         <article class="row">
           <div class="row-head">
             <span class="name">{t.name ?? t.info_hash}</span>
-            <span class="state">{s?.state ?? "—"}</span>
+            <span class="state state-{t.state}">{t.state}</span>
           </div>
           <div class="bar">
-            <div class="fill" style:width="{p}%"></div>
+            <div class="fill" style:width="{Math.min(100, t.progress_pct)}%"></div>
           </div>
           <div class="row-foot">
-            <span>{p.toFixed(1)}%</span>
-            <span>{fmtBytes(s?.progress_bytes ?? 0)} / {fmtBytes(s?.total_bytes ?? 0)}</span>
-            <span>↓ {(s?.live?.down_speed?.mbps ?? 0).toFixed(2)} MB/s</span>
-            <span>↑ {(s?.live?.up_speed?.mbps ?? 0).toFixed(2)} MB/s</span>
-            <span>peers {s?.live?.snapshot?.peer_stats?.live ?? 0}</span>
+            <span>{t.progress_pct.toFixed(1)}%</span>
+            <span>{fmtBytes(t.progress_bytes)} / {fmtBytes(t.total_bytes)}</span>
+            <span>↓ {fmtBps(t.down_bps)}</span>
+            <span>↑ {fmtBps(t.up_bps)}</span>
+            <span>peers {t.peers_live}</span>
+            <span>eta {fmtEta(t.eta_secs)}</span>
             <span class="actions">
-              <button onclick={() => call("pause", t.id)}>pause</button>
-              <button onclick={() => call("resume", t.id)}>resume</button>
-              <button onclick={() => call("forget", t.id)}>forget</button>
-              <button class="danger" onclick={() => call("delete", t.id)}>delete</button>
+              <button onclick={() => act("pause", t.id)}>pause</button>
+              <button onclick={() => act("resume", t.id)}>resume</button>
+              <button onclick={() => act("forget", t.id)}>forget</button>
+              <button class="danger" onclick={() => act("delete", t.id)}>delete</button>
             </span>
           </div>
+          {#if t.error}
+            <p class="err">{t.error}</p>
+          {/if}
         </article>
       {/each}
     {/if}
@@ -162,12 +172,28 @@
     padding: 2rem 1.5rem 4rem;
   }
 
+  .title {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
   header h1 {
     margin: 0 0 0.25rem;
     font-size: 1.4rem;
     letter-spacing: 0.18em;
     color: #FF2A6D;
     font-weight: 700;
+  }
+
+  .globals {
+    display: flex;
+    gap: 1.25rem;
+    font-family: ui-monospace, "JetBrains Mono", monospace;
+    font-size: 0.85rem;
+    color: #ECECF5;
   }
 
   .dim {
@@ -287,8 +313,11 @@
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #08F7FE;
   }
+  .state-live { color: #08F7FE; }
+  .state-paused { color: #6E6E8C; }
+  .state-initializing { color: #FFB23F; }
+  .state-error { color: #FF3F3F; }
 
   .bar {
     height: 6px;

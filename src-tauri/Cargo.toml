@@ -30,3 +30,8 @@ anyhow = "1"
 
 # OS-correct config/data paths
 dirs = "5"
+
+# Type-safe Tauri command + event bindings (auto-generated TS in src/lib/bindings.ts)
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+specta-typescript = "=0.0.11"
+tauri-specta = { version = "=2.0.0-rc.24", features = ["derive", "typescript"] }
