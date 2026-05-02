@@ -5,9 +5,12 @@
   import { ui } from "$lib/stores/ui.svelte";
 
   let settings = $state<AppSettings | null>(null);
+  /** Snapshot at load/last-save, used to detect which fields changed. */
+  let baseline = $state<AppSettings | null>(null);
   let busy = $state(false);
   let error = $state<string | null>(null);
   let saved = $state(false);
+  let lastSaveNeedsRestart = $state(false);
 
   // Lazy-load on first open; refresh whenever opened so external file edits are reflected.
   $effect(() => {
@@ -20,18 +23,33 @@
 
   async function load() {
     try {
-      settings = await unwrap(commands.getSettings());
+      const s = await unwrap(commands.getSettings());
+      settings = s;
+      baseline = structuredClone(s);
     } catch (e) {
       error = String(e);
     }
   }
 
+  function nonBandwidthChanged(a: AppSettings, b: AppSettings): boolean {
+    return (
+      a.download_dir !== b.download_dir ||
+      a.listen_port_min !== b.listen_port_min ||
+      a.listen_port_max !== b.listen_port_max ||
+      a.enable_upnp !== b.enable_upnp ||
+      a.enable_dht !== b.enable_dht
+    );
+  }
+
   async function save() {
-    if (!settings) return;
+    if (!settings || !baseline) return;
     busy = true;
     error = null;
     try {
+      const needsRestart = nonBandwidthChanged(settings, baseline);
       await unwrap(commands.saveSettings(settings));
+      lastSaveNeedsRestart = needsRestart;
+      baseline = structuredClone(settings);
       saved = true;
     } catch (e) {
       error = String(e);
@@ -137,10 +155,14 @@
         <p class="err tnum">{error}</p>
       {/if}
 
-      {#if saved}
+      {#if saved && lastSaveNeedsRestart}
         <div class="restart-banner">
-          <span>Settings saved. Most changes apply on next launch.</span>
+          <span>Saved. Network &amp; storage changes apply on next launch.</span>
           <button type="button" class="restart" onclick={restart}>Restart now</button>
+        </div>
+      {:else if saved}
+        <div class="saved-banner">
+          <span>Saved. Bandwidth limits applied live.</span>
         </div>
       {/if}
 
@@ -255,6 +277,15 @@
     padding: var(--sp-2) var(--sp-3);
     background: rgba(8, 247, 254, 0.06);
     border: 1px solid var(--accent-cyan);
+    border-radius: var(--radius-md);
+    color: var(--fg-1);
+    font-size: var(--fs-xs);
+  }
+
+  .saved-banner {
+    padding: var(--sp-2) var(--sp-3);
+    background: rgba(57, 255, 20, 0.06);
+    border: 1px solid var(--ok);
     border-radius: var(--radius-md);
     color: var(--fg-1);
     font-size: var(--fs-xs);

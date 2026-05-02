@@ -66,21 +66,23 @@ pub struct AddTorrentResult {
     pub name: Option<String>,
 }
 
-const MBPS_TO_BPS: f64 = 125_000.0; // 1 mbps = 1_000_000 bits / 8 = 125_000 bytes / s
+// librqbit's `Speed.mbps` is misleadingly named — its Display impl prints
+// `"{:.2} MiB/s"`, so it's actually mebibytes per second.
+const MIB_TO_BYTES: f64 = 1024.0 * 1024.0;
 
-fn mbps_to_bps(mbps: f64) -> u64 {
-    if !mbps.is_finite() || mbps < 0.0 {
+fn mibps_to_bps(mibps: f64) -> u64 {
+    if !mibps.is_finite() || mibps < 0.0 {
         0
     } else {
-        (mbps * MBPS_TO_BPS).round() as u64
+        (mibps * MIB_TO_BYTES).round() as u64
     }
 }
 
 impl From<SessionStatsSnapshot> for SessionStats {
     fn from(s: SessionStatsSnapshot) -> Self {
         Self {
-            down_bps: mbps_to_bps(s.download_speed.mbps),
-            up_bps: mbps_to_bps(s.upload_speed.mbps),
+            down_bps: mibps_to_bps(s.download_speed.mbps),
+            up_bps: mibps_to_bps(s.upload_speed.mbps),
             fetched_bytes: s.fetched_bytes,
             uploaded_bytes: s.uploaded_bytes,
             peers_live: s.peers.live as u32,
@@ -108,8 +110,8 @@ impl From<TorrentListResponse> for TorrentSnapshot {
                 };
 
                 let live = s.and_then(|s| s.live.as_ref());
-                let down_bps = live.map(|l| mbps_to_bps(l.download_speed.mbps)).unwrap_or(0);
-                let up_bps = live.map(|l| mbps_to_bps(l.upload_speed.mbps)).unwrap_or(0);
+                let down_bps = live.map(|l| mibps_to_bps(l.download_speed.mbps)).unwrap_or(0);
+                let up_bps = live.map(|l| mibps_to_bps(l.upload_speed.mbps)).unwrap_or(0);
                 let peers_live = live
                     .map(|l| l.snapshot.peer_stats.live as u32)
                     .unwrap_or(0);

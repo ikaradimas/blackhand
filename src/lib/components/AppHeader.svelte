@@ -1,7 +1,25 @@
 <script lang="ts">
   import StatPill from "$lib/components/StatPill.svelte";
   import { session } from "$lib/stores/session.svelte";
+  import { torrents } from "$lib/stores/torrents.svelte";
   import { ui } from "$lib/stores/ui.svelte";
+  import { commands } from "$lib/bindings";
+  import { unwrap } from "$lib/api";
+
+  async function pauseAll() {
+    await Promise.allSettled(
+      torrents.list.map((t) => unwrap(commands.pause(t.id))),
+    );
+  }
+  async function resumeAll() {
+    await Promise.allSettled(
+      torrents.list.map((t) => unwrap(commands.resume(t.id))),
+    );
+  }
+
+  const anyTorrents = $derived(torrents.list.length > 0);
+  const anyPaused = $derived(torrents.list.some((t) => t.state === "paused"));
+  const anyActive = $derived(torrents.list.some((t) => t.state !== "paused" && !t.finished));
 
   function fmtBytes(n: number): string {
     if (!Number.isFinite(n)) return "—";
@@ -44,7 +62,23 @@
         <StatPill label="peers" value={String(session.stats.peers_live)} />
       </div>
     {/if}
-    <button class="add" type="button" onclick={() => ui.openAdd()}>+ Add</button>
+    <div class="bulk">
+      <button
+        type="button"
+        title="Resume all"
+        aria-label="Resume all"
+        onclick={resumeAll}
+        disabled={!anyPaused}
+      >▶</button>
+      <button
+        type="button"
+        title="Pause all"
+        aria-label="Pause all"
+        onclick={pauseAll}
+        disabled={!anyActive}
+      >❚❚</button>
+    </div>
+    <button class="add" type="button" onclick={() => ui.openAdd()} disabled={false}>+ Add</button>
     <button class="gear" type="button" onclick={() => ui.openSettings()} aria-label="Settings" title="Settings">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
         <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm0 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/>
@@ -146,5 +180,34 @@
   .gear:hover {
     border-color: var(--accent-cyan);
     color: var(--accent-cyan);
+  }
+
+  .bulk {
+    display: inline-flex;
+    gap: 2px;
+  }
+  .bulk button {
+    background: transparent;
+    border: 1px solid var(--bg-3);
+    color: var(--fg-1);
+    border-radius: var(--radius-md);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color var(--motion-fast), color var(--motion-fast);
+  }
+  .bulk button:hover:not(:disabled) {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+  .bulk button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
   }
 </style>

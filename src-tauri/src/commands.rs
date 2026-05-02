@@ -109,8 +109,20 @@ pub fn get_settings() -> CmdResult<AppSettings> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn save_settings(settings: AppSettings) -> CmdResult<()> {
-    settings::save(&settings).map_err(err)
+pub fn save_settings(
+    api: State<'_, Arc<Api>>,
+    settings: AppSettings,
+) -> CmdResult<()> {
+    settings::save(&settings).map_err(err)?;
+    // Bandwidth limits can be applied live — no restart needed.
+    let session = api.session();
+    session
+        .ratelimits
+        .set_upload_bps(settings::kbps_to_nz_bps(settings.upload_limit_kbps));
+    session
+        .ratelimits
+        .set_download_bps(settings::kbps_to_nz_bps(settings.download_limit_kbps));
+    Ok(())
 }
 
 #[tauri::command]

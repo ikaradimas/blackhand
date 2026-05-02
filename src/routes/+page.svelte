@@ -68,11 +68,14 @@
     margin-bottom: var(--sp-3);
   }
 
+  /* Must mirror TorrentRow's .grid template (including the 96px actions
+   * column) so column boundaries line up. */
   .col-headers {
     display: grid;
-    grid-template-columns: 18px minmax(0, 1fr) 80px 110px 110px 60px 80px auto;
+    grid-template-columns: 18px minmax(0, 1fr) 80px 110px 110px 60px 80px 96px;
     gap: var(--sp-3);
-    padding: 0 var(--sp-4) var(--sp-2);
+    /* Match the row's outer padding (sp-4 + 1px border) so contents line up. */
+    padding: 0 calc(var(--sp-4) + 1px) var(--sp-2);
     font-size: var(--fs-xs);
     color: var(--fg-2);
     letter-spacing: var(--tracking-wider);

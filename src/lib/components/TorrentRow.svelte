@@ -106,10 +106,12 @@
     box-shadow: var(--glow-cyan-sm);
   }
 
-  /* Column layout: state · name (flex) · size · down · up · peers · eta · actions */
+  /* Column layout: state · name (flex) · size · down · up · peers · eta · actions
+   * The actions column must be a fixed width here AND in the page-level
+   * column header so both grids align. 3 × 28px buttons + 2 × 2px gaps = 88px. */
   .grid {
     display: grid;
-    grid-template-columns: 18px minmax(0, 1fr) 80px 110px 110px 60px 80px auto;
+    grid-template-columns: 18px minmax(0, 1fr) 80px 110px 110px 60px 80px 96px;
     gap: var(--sp-3);
     align-items: center;
     font-size: var(--fs-sm);
