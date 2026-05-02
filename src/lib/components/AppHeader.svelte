@@ -50,7 +50,7 @@
       onclick={() => ui.openAbout()}
       title="About"
       aria-label="About BlackHand"
-    >v0.1.0</button>
+    >v0.2.0</button>
   </div>
 
   <div class="right">
