@@ -1,6 +1,7 @@
 mod commands;
 mod paths;
 mod session;
+mod settings;
 mod stats;
 mod types;
 
@@ -18,6 +19,9 @@ fn make_specta_builder() -> Builder<tauri::Wry> {
             commands::forget,
             commands::delete,
             commands::session_stats,
+            commands::get_settings,
+            commands::save_settings,
+            commands::restart_app,
         ])
         .events(collect_events![
             stats::TorrentsSnapshotEvent,
@@ -43,7 +47,8 @@ pub fn run() {
         .setup(move |app| {
             specta_builder.mount_events(app);
 
-            let api = tauri::async_runtime::block_on(session::build_api())?;
+            let cfg = settings::load().unwrap_or_default();
+            let api = tauri::async_runtime::block_on(session::build_api(&cfg))?;
             app.manage(api.clone());
 
             let handle = app.handle().clone();

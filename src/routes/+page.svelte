@@ -7,13 +7,19 @@
 
   let lastError = $state<string | null>(null);
 
-  async function act(action: "pause" | "resume" | "forget" | "delete", id: number) {
+  async function act(action: "pause" | "resume" | "forget", id: number) {
     lastError = null;
     try {
       await unwrap(commands[action](id));
     } catch (err) {
       lastError = String(err);
     }
+  }
+
+  function askDelete(id: number) {
+    const t = torrents.list.find((x) => x.id === id);
+    if (!t) return;
+    ui.askRemove({ id, name: t.name ?? t.info_hash });
   }
 </script>
 
@@ -45,7 +51,7 @@
         onpause={(id) => act("pause", id)}
         onresume={(id) => act("resume", id)}
         onforget={(id) => act("forget", id)}
-        ondelete={(id) => act("delete", id)}
+        ondelete={askDelete}
       />
     {/each}
   </section>

@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use librqbit::api::{ApiTorrentListOpts, TorrentIdOrHash};
 use librqbit::{AddTorrent, Api};
-use tauri::State;
+use tauri::{AppHandle, State};
 
+use crate::settings::{self, AppSettings};
 use crate::types::{AddTorrentResult, SessionStats, TorrentSnapshot};
 
 type CmdResult<T> = Result<T, String>;
@@ -98,4 +99,22 @@ pub async fn delete(api: State<'_, Arc<Api>>, id: u64) -> CmdResult<()> {
 #[specta::specta]
 pub fn session_stats(api: State<'_, Arc<Api>>) -> CmdResult<SessionStats> {
     Ok(api.api_session_stats().into())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_settings() -> CmdResult<AppSettings> {
+    settings::load().map_err(err)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn save_settings(settings: AppSettings) -> CmdResult<()> {
+    settings::save(&settings).map_err(err)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn restart_app(app: AppHandle) {
+    app.restart();
 }

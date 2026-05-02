@@ -13,6 +13,9 @@ export const commands = {
 	forget: (id: number) => typedError<null, string>(__TAURI_INVOKE("forget", { id })),
 	delete: (id: number) => typedError<null, string>(__TAURI_INVOKE("delete", { id })),
 	sessionStats: () => typedError<SessionStats, string>(__TAURI_INVOKE("session_stats")),
+	getSettings: () => typedError<AppSettings, string>(__TAURI_INVOKE("get_settings")),
+	saveSettings: (settings: AppSettings) => typedError<null, string>(__TAURI_INVOKE("save_settings", { settings })),
+	restartApp: () => __TAURI_INVOKE<void>("restart_app"),
 };
 
 /** Events */
@@ -26,6 +29,19 @@ export type AddTorrentResult = {
 	id: number | null,
 	info_hash: string,
 	name: string | null,
+};
+
+export type AppSettings = {
+	// Empty string -> resolve to ~/Downloads/BlackHand.
+	download_dir: string,
+	// 0 (either side) -> use librqbit defaults.
+	listen_port_min: number,
+	listen_port_max: number,
+	enable_upnp: boolean,
+	enable_dht: boolean,
+	// 0 -> unlimited.
+	upload_limit_kbps: number,
+	download_limit_kbps: number,
 };
 
 export type SessionStats = {

@@ -45,6 +45,12 @@
       </div>
     {/if}
     <button class="add" type="button" onclick={() => ui.openAdd()}>+ Add</button>
+    <button class="gear" type="button" onclick={() => ui.openSettings()} aria-label="Settings" title="Settings">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Zm0 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/>
+        <path d="m13.55 8.94.87-.5a.5.5 0 0 0 .18-.68l-1.5-2.6a.5.5 0 0 0-.68-.18l-.87.5a5.5 5.5 0 0 0-1.41-.82V3.66a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v1a5.5 5.5 0 0 0-1.41.82l-.87-.5a.5.5 0 0 0-.68.18l-1.5 2.6a.5.5 0 0 0 .18.68l.87.5a5.5 5.5 0 0 0 0 1.64l-.87.5a.5.5 0 0 0-.18.68l1.5 2.6a.5.5 0 0 0 .68.18l.87-.5a5.5 5.5 0 0 0 1.41.82v1a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-1a5.5 5.5 0 0 0 1.41-.82l.87.5a.5.5 0 0 0 .68-.18l1.5-2.6a.5.5 0 0 0-.18-.68l-.87-.5a5.5 5.5 0 0 0 0-1.64ZM8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/>
+      </svg>
+    </button>
   </div>
 </header>
 
@@ -121,5 +127,24 @@
     background: var(--accent-magenta-hover);
     border-color: var(--accent-magenta-hover);
     box-shadow: var(--glow-magenta-md);
+  }
+
+  .gear {
+    background: transparent;
+    border: 1px solid var(--bg-3);
+    color: var(--fg-1);
+    border-radius: var(--radius-md);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color var(--motion-fast), color var(--motion-fast);
+  }
+  .gear:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
   }
 </style>

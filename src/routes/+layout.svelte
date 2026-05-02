@@ -5,6 +5,8 @@
 
   import AppHeader from "$lib/components/AppHeader.svelte";
   import AddTorrentModal from "$lib/components/AddTorrentModal.svelte";
+  import SettingsModal from "$lib/components/SettingsModal.svelte";
+  import RemoveConfirmModal from "$lib/components/RemoveConfirmModal.svelte";
   import { session } from "$lib/stores/session.svelte";
   import { torrents } from "$lib/stores/torrents.svelte";
 
@@ -22,6 +24,8 @@
   {@render children()}
 </main>
 <AddTorrentModal />
+<SettingsModal />
+<RemoveConfirmModal />
 
 <style>
   main {
