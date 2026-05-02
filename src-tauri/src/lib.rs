@@ -7,14 +7,65 @@ mod types;
 
 use std::sync::Arc;
 
+use librqbit::api::{ApiTorrentListOpts, TorrentIdOrHash};
 use librqbit::{AddTorrent, Api};
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{AppHandle, Manager};
 use tauri_specta::{collect_commands, collect_events, Builder};
 
 fn add_magnet_url(api: Arc<Api>, url: String) {
     tauri::async_runtime::spawn(async move {
         if let Err(e) = api.api_add_torrent(AddTorrent::from_url(url), None).await {
             eprintln!("deep-link add failed: {e:#}");
+        }
+    });
+}
+
+fn toggle_main_window(app: &AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        let visible = w.is_visible().unwrap_or(false);
+        if visible {
+            let _ = w.hide();
+        } else {
+            let _ = w.unminimize();
+            let _ = w.show();
+            let _ = w.set_focus();
+        }
+    }
+}
+
+fn show_main_window(app: &AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+}
+
+/// Iterate the current torrents and pause (or resume) each. Used by the tray menu.
+fn bulk_action(app: &AppHandle, pause: bool) {
+    let Some(api) = app.try_state::<Arc<Api>>() else {
+        return;
+    };
+    let api = api.inner().clone();
+    let ids: Vec<u64> = api
+        .api_torrent_list_ext(ApiTorrentListOpts { with_stats: false })
+        .torrents
+        .into_iter()
+        .filter_map(|t| t.id.map(|i| i as u64))
+        .collect();
+    tauri::async_runtime::spawn(async move {
+        for id in ids {
+            let handle = TorrentIdOrHash::Id(id as usize);
+            let res = if pause {
+                api.api_torrent_action_pause(handle).await
+            } else {
+                api.api_torrent_action_start(handle).await
+            };
+            if let Err(e) = res {
+                eprintln!("tray bulk {} failed for id={id}: {e:#}", if pause { "pause" } else { "resume" });
+            }
         }
     });
 }
@@ -106,6 +157,36 @@ pub fn run() {
             // macOS uses Info.plist, written by `tauri build`.
             #[cfg(any(windows, target_os = "linux"))]
             app.deep_link().register_all()?;
+
+            // System tray with menu.
+            let show_i = MenuItem::with_id(app, "show", "Show BlackHand", true, None::<&str>)?;
+            let pause_i = MenuItem::with_id(app, "pause_all", "Pause all", true, None::<&str>)?;
+            let resume_i = MenuItem::with_id(app, "resume_all", "Resume all", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_i, &pause_i, &resume_i, &quit_i])?;
+
+            let _tray = TrayIconBuilder::with_id("main")
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => show_main_window(app),
+                    "pause_all" => bulk_action(app, true),
+                    "resume_all" => bulk_action(app, false),
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        toggle_main_window(tray.app_handle());
+                    }
+                })
+                .build(app)?;
 
             Ok(())
         })
