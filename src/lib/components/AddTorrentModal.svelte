@@ -2,13 +2,13 @@
   import { commands } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import Modal from "$lib/components/Modal.svelte";
+  import { toasts } from "$lib/stores/toasts.svelte";
   import { ui } from "$lib/stores/ui.svelte";
 
   let magnet = $state("");
   let pickedFile = $state<{ name: string; size: number; bytes: number[] } | null>(null);
   let dragOver = $state(false);
   let busy = $state(false);
-  let error = $state<string | null>(null);
   let magnetInput = $state<HTMLInputElement>();
 
   $effect(() => {
@@ -21,7 +21,6 @@
   function reset() {
     magnet = "";
     pickedFile = null;
-    error = null;
     busy = false;
   }
 
@@ -32,13 +31,12 @@
 
   async function ingestFile(file: File) {
     if (!file.name.toLowerCase().endsWith(".torrent")) {
-      error = `expected .torrent file, got "${file.name}"`;
+      toasts.error(`expected .torrent file, got "${file.name}"`);
       return;
     }
     const bytes = Array.from(new Uint8Array(await file.arrayBuffer()));
     pickedFile = { name: file.name, size: file.size, bytes };
     magnet = "";
-    error = null;
   }
 
   async function onPick(e: Event) {
@@ -72,16 +70,17 @@
     e?.preventDefault();
     if (!canAdd) return;
     busy = true;
-    error = null;
     try {
       if (magnet.trim()) {
-        await unwrap(commands.addMagnet(magnet.trim()));
+        const r = await unwrap(commands.addMagnet(magnet.trim()));
+        toasts.ok(`added: ${r.name ?? r.info_hash}`);
       } else if (pickedFile) {
-        await unwrap(commands.addTorrentFile(pickedFile.bytes));
+        const r = await unwrap(commands.addTorrentFile(pickedFile.bytes));
+        toasts.ok(`added: ${r.name ?? r.info_hash}`);
       }
       close();
     } catch (e) {
-      error = String(e);
+      toasts.error(`add failed: ${e}`);
     } finally {
       busy = false;
     }
@@ -139,10 +138,6 @@
         disabled={busy}
       />
     </label>
-
-    {#if error}
-      <p class="err tnum">{error}</p>
-    {/if}
 
     <div class="actions">
       <button type="button" onclick={close}>Cancel</button>
@@ -294,16 +289,6 @@
   .picked-clear:hover {
     border-color: var(--err);
     color: var(--err);
-  }
-
-  .err {
-    color: var(--err);
-    background: rgba(255, 63, 63, 0.08);
-    border: 1px solid rgba(255, 63, 63, 0.3);
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--radius-md);
-    font-size: var(--fs-xs);
-    margin: 0;
   }
 
   .actions {

@@ -3,6 +3,8 @@ import { unwrap } from "$lib/api";
 
 class TorrentsStore {
   list = $state<TorrentSummary[]>([]);
+  /** Becomes true after the first successful fetch or first event tick. */
+  loaded = $state(false);
   #started = false;
 
   async start() {
@@ -11,11 +13,13 @@ class TorrentsStore {
     try {
       const initial = await unwrap(commands.listTorrents());
       this.list = initial.torrents;
+      this.loaded = true;
     } catch {
       // initial-fetch failures are tolerable; live events take over
     }
     await events.torrentsSnapshotEvent.listen((e) => {
       this.list = e.payload.torrents;
+      this.loaded = true;
     });
   }
 }

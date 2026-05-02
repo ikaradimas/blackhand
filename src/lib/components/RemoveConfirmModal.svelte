@@ -2,27 +2,26 @@
   import { commands } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import Modal from "$lib/components/Modal.svelte";
+  import { toasts } from "$lib/stores/toasts.svelte";
   import { ui } from "$lib/stores/ui.svelte";
 
   let busy = $state(false);
-  let error = $state<string | null>(null);
 
   const target = $derived(ui.removeTarget);
 
   function close() {
     ui.cancelRemove();
-    error = null;
   }
 
   async function confirm() {
     if (!target) return;
     busy = true;
-    error = null;
     try {
       await unwrap(commands.delete(target.id));
+      toasts.ok(`deleted: ${target.name}`);
       ui.cancelRemove();
     } catch (e) {
-      error = String(e);
+      toasts.error(`delete failed: ${e}`);
     } finally {
       busy = false;
     }
@@ -41,10 +40,6 @@
       <span class="warn-icon">⚠</span>
       this cannot be undone
     </p>
-
-    {#if error}
-      <p class="err tnum">{error}</p>
-    {/if}
 
     <div class="actions">
       <button type="button" onclick={close} disabled={busy}>Cancel</button>
@@ -97,16 +92,6 @@
   .warn-icon {
     font-family: var(--font-mono);
     font-size: var(--fs-md);
-  }
-
-  .err {
-    color: var(--err);
-    background: rgba(255, 63, 63, 0.08);
-    border: 1px solid rgba(255, 63, 63, 0.3);
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--radius-md);
-    font-size: var(--fs-xs);
-    margin: 0 0 var(--sp-3);
   }
 
   .actions {

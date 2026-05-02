@@ -7,11 +7,12 @@
   import { unwrap } from "$lib/api";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import PixelMark from "$lib/components/PixelMark.svelte";
+  import { toasts } from "$lib/stores/toasts.svelte";
 
   let id = $derived(Number(page.params.id));
   let detail = $state<TorrentDetail | null>(null);
   let files = $state<TorrentFile[]>([]);
-  let lastError = $state<string | null>(null);
+  let loadFailed = $state(false);
   let savingFiles = $state(false);
   let timer: ReturnType<typeof setInterval> | null = null;
 
@@ -28,9 +29,12 @@
           files[i] = { ...files[i], name: d.files[i].name, length: d.files[i].length };
         }
       }
-      lastError = null;
     } catch (e) {
-      lastError = String(e);
+      // Only toast once — polling errors otherwise spam.
+      if (!loadFailed) {
+        loadFailed = true;
+        toasts.error(`couldn't load torrent: ${e}`);
+      }
     }
   }
 
@@ -63,13 +67,13 @@
   async function saveFiles() {
     if (!detail || !filesDirty) return;
     savingFiles = true;
-    lastError = null;
     try {
       const idxs = files.filter((f) => f.included).map((f) => f.idx);
       await unwrap(commands.setOnlyFiles(detail.id, idxs));
       await refresh();
+      toasts.ok("file selection applied");
     } catch (e) {
-      lastError = String(e);
+      toasts.error(`apply failed: ${e}`);
     } finally {
       savingFiles = false;
     }
@@ -88,11 +92,7 @@
 </script>
 
 {#if !detail}
-  {#if lastError}
-    <p class="err tnum">{lastError}</p>
-  {:else}
-    <p class="loading">loading…</p>
-  {/if}
+  <p class="loading">{loadFailed ? "couldn't load torrent" : "loading…"}</p>
 {:else}
   <header class="hd">
     <div class="hd-left">

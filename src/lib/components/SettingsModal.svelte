@@ -2,13 +2,13 @@
   import { commands, type AppSettings } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import Modal from "$lib/components/Modal.svelte";
+  import { toasts } from "$lib/stores/toasts.svelte";
   import { ui } from "$lib/stores/ui.svelte";
 
   let settings = $state<AppSettings | null>(null);
   /** Snapshot at load/last-save, used to detect which fields changed. */
   let baseline = $state<AppSettings | null>(null);
   let busy = $state(false);
-  let error = $state<string | null>(null);
   let saved = $state(false);
   let lastSaveNeedsRestart = $state(false);
 
@@ -16,7 +16,6 @@
   $effect(() => {
     if (ui.settingsModal) {
       saved = false;
-      error = null;
       load();
     }
   });
@@ -27,7 +26,7 @@
       settings = s;
       baseline = structuredClone(s);
     } catch (e) {
-      error = String(e);
+      toasts.error(`couldn't load settings: ${e}`);
     }
   }
 
@@ -44,7 +43,6 @@
   async function save() {
     if (!settings || !baseline) return;
     busy = true;
-    error = null;
     try {
       const needsRestart = nonBandwidthChanged(settings, baseline);
       await unwrap(commands.saveSettings(settings));
@@ -52,7 +50,7 @@
       baseline = structuredClone(settings);
       saved = true;
     } catch (e) {
-      error = String(e);
+      toasts.error(`save failed: ${e}`);
     } finally {
       busy = false;
     }
@@ -62,7 +60,7 @@
     try {
       await commands.restartApp();
     } catch (e) {
-      error = String(e);
+      toasts.error(`restart failed: ${e}`);
     }
   }
 
@@ -150,10 +148,6 @@
         </div>
         <span class="hint">0 = unlimited</span>
       </section>
-
-      {#if error}
-        <p class="err tnum">{error}</p>
-      {/if}
 
       {#if saved && lastSaveNeedsRestart}
         <div class="restart-banner">
@@ -257,16 +251,6 @@
   .check input[type="checkbox"] {
     accent-color: var(--accent-magenta);
     cursor: pointer;
-  }
-
-  .err {
-    color: var(--err);
-    background: rgba(255, 63, 63, 0.08);
-    border: 1px solid rgba(255, 63, 63, 0.3);
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--radius-md);
-    font-size: var(--fs-xs);
-    margin: 0;
   }
 
   .restart-banner {

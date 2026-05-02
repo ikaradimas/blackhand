@@ -9,6 +9,7 @@
   import SettingsModal from "$lib/components/SettingsModal.svelte";
   import RemoveConfirmModal from "$lib/components/RemoveConfirmModal.svelte";
   import AboutModal from "$lib/components/AboutModal.svelte";
+  import ToastStack from "$lib/components/ToastStack.svelte";
   import { session } from "$lib/stores/session.svelte";
   import { torrents } from "$lib/stores/torrents.svelte";
   import { ui } from "$lib/stores/ui.svelte";
@@ -68,6 +69,7 @@
 <SettingsModal />
 <RemoveConfirmModal />
 <AboutModal />
+<ToastStack />
 
 <style>
   main {

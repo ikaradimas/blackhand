@@ -2,17 +2,16 @@
   import { commands } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import { torrents } from "$lib/stores/torrents.svelte";
+  import { toasts } from "$lib/stores/toasts.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import TorrentRow from "$lib/components/TorrentRow.svelte";
-
-  let lastError = $state<string | null>(null);
+  import SkeletonRow from "$lib/components/SkeletonRow.svelte";
 
   async function act(action: "pause" | "resume" | "forget", id: number) {
-    lastError = null;
     try {
       await unwrap(commands[action](id));
     } catch (err) {
-      lastError = String(err);
+      toasts.error(`${action} failed: ${err}`);
     }
   }
 
@@ -23,14 +22,21 @@
   }
 </script>
 
-{#if lastError}
-  <p class="err tnum">{lastError}</p>
-{/if}
-
-{#if torrents.list.length === 0}
+{#if !torrents.loaded}
+  <section class="list">
+    {#each [0, 1, 2] as i}
+      <SkeletonRow delay={i * 150} />
+    {/each}
+  </section>
+{:else if torrents.list.length === 0}
   <div class="empty">
-    <p class="empty-title">no torrents yet</p>
-    <p class="dim">click <button class="empty-cta" onclick={() => ui.openAdd()}>+ Add</button> in the header, or drop a .torrent file</p>
+    <span class="empty-glow"></span>
+    <p class="empty-title">// awaiting input</p>
+    <p class="empty-prompt">
+      paste a magnet, drop a <span class="mono">.torrent</span>, or
+      <button class="empty-cta" onclick={() => ui.openAdd()}>+ Add</button>
+    </p>
+    <p class="empty-hint dim">⌘N to open the add dialog</p>
   </div>
 {:else}
   <header class="col-headers tnum">
@@ -58,16 +64,6 @@
 {/if}
 
 <style>
-  .err {
-    color: var(--err);
-    font-size: var(--fs-xs);
-    background: rgba(255, 63, 63, 0.08);
-    border: 1px solid rgba(255, 63, 63, 0.3);
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--radius-md);
-    margin-bottom: var(--sp-3);
-  }
-
   /* Must mirror TorrentRow's .grid template (including the 124px actions
    * column) so column boundaries line up. */
   .col-headers {
@@ -90,15 +86,48 @@
   }
 
   .empty {
+    position: relative;
     text-align: center;
     padding: var(--sp-8) 0;
+    overflow: hidden;
+  }
+  .empty-glow {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at center,
+      rgba(255, 42, 109, 0.06) 0%,
+      rgba(255, 42, 109, 0.02) 40%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
   }
   .empty-title {
-    color: var(--fg-1);
+    position: relative;
+    color: var(--accent-cyan);
     font-family: var(--font-mono);
-    text-transform: uppercase;
+    font-size: var(--fs-md);
     letter-spacing: var(--tracking-wider);
     margin: 0 0 var(--sp-3);
+  }
+  .empty-prompt {
+    position: relative;
+    color: var(--fg-1);
+    font-size: var(--fs-sm);
+    margin: 0;
+  }
+  .empty-prompt .mono {
+    font-family: var(--font-mono);
+    color: var(--fg-0);
+  }
+  .empty-hint {
+    position: relative;
+    margin-top: var(--sp-3);
   }
   .dim {
     color: var(--fg-2);
@@ -114,9 +143,12 @@
     font-family: inherit;
     cursor: pointer;
     margin: 0 4px;
+    transition: background var(--motion-fast), color var(--motion-fast),
+      box-shadow var(--motion-fast);
   }
   .empty-cta:hover {
     background: var(--accent-magenta);
     color: var(--fg-0);
+    box-shadow: var(--glow-magenta-sm);
   }
 </style>
