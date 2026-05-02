@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- canvas -->
+  <rect width="1024" height="1024" fill="#0E0E16"/>
+
+  <!-- cyan corner brackets -->
+  <g fill="#08F7FE">
+    <!-- top-left -->
+    <rect x="80"  y="80"  width="180" height="36"/>
+    <rect x="80"  y="80"  width="36"  height="180"/>
+    <!-- top-right -->
+    <rect x="764" y="80"  width="180" height="36"/>
+    <rect x="908" y="80"  width="36"  height="180"/>
+    <!-- bottom-left -->
+    <rect x="80"  y="908" width="180" height="36"/>
+    <rect x="80"  y="764" width="36"  height="180"/>
+    <!-- bottom-right -->
+    <rect x="764" y="908" width="180" height="36"/>
+    <rect x="908" y="764" width="36"  height="180"/>
+  </g>
+
+  <!-- magenta B -->
+  <text x="512" y="780"
+        font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-weight="900"
+        font-size="900"
+        fill="#FF2A6D"
+        text-anchor="middle">B</text>
+</svg>
