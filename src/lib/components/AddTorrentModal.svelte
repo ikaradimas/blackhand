@@ -9,6 +9,7 @@
   let pickedFile = $state<{ name: string; size: number; bytes: number[] } | null>(null);
   let dragOver = $state(false);
   let busy = $state(false);
+  let error = $state<string | null>(null);
   let magnetInput = $state<HTMLInputElement>();
 
   $effect(() => {
@@ -22,6 +23,7 @@
     magnet = "";
     pickedFile = null;
     busy = false;
+    error = null;
   }
 
   function close() {
@@ -31,12 +33,13 @@
 
   async function ingestFile(file: File) {
     if (!file.name.toLowerCase().endsWith(".torrent")) {
-      toasts.error(`expected .torrent file, got "${file.name}"`);
+      error = `expected .torrent file, got "${file.name}"`;
       return;
     }
     const bytes = Array.from(new Uint8Array(await file.arrayBuffer()));
     pickedFile = { name: file.name, size: file.size, bytes };
     magnet = "";
+    error = null;
   }
 
   async function onPick(e: Event) {
@@ -70,6 +73,7 @@
     e?.preventDefault();
     if (!canAdd) return;
     busy = true;
+    error = null;
     try {
       if (magnet.trim()) {
         const r = await unwrap(commands.addMagnet(magnet.trim()));
@@ -80,7 +84,7 @@
       }
       close();
     } catch (e) {
-      toasts.error(`add failed: ${e}`);
+      error = String(e);
     } finally {
       busy = false;
     }
@@ -96,7 +100,10 @@
         placeholder="magnet:?xt=urn:btih:…"
         bind:this={magnetInput}
         bind:value={magnet}
-        oninput={() => (pickedFile = null)}
+        oninput={() => {
+          pickedFile = null;
+          error = null;
+        }}
         disabled={busy}
       />
     </label>
@@ -138,6 +145,10 @@
         disabled={busy}
       />
     </label>
+
+    {#if error}
+      <p class="err tnum">{error}</p>
+    {/if}
 
     <div class="actions">
       <button type="button" onclick={close}>Cancel</button>
@@ -289,6 +300,16 @@
   .picked-clear:hover {
     border-color: var(--err);
     color: var(--err);
+  }
+
+  .err {
+    color: var(--err);
+    background: rgba(255, 63, 63, 0.08);
+    border: 1px solid rgba(255, 63, 63, 0.3);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-xs);
+    margin: 0;
   }
 
   .actions {

@@ -10,12 +10,14 @@
   let baseline = $state<AppSettings | null>(null);
   let busy = $state(false);
   let saved = $state(false);
+  let error = $state<string | null>(null);
   let lastSaveNeedsRestart = $state(false);
 
   // Lazy-load on first open; refresh whenever opened so external file edits are reflected.
   $effect(() => {
     if (ui.settingsModal) {
       saved = false;
+      error = null;
       load();
     }
   });
@@ -26,7 +28,7 @@
       settings = s;
       baseline = structuredClone(s);
     } catch (e) {
-      toasts.error(`couldn't load settings: ${e}`);
+      error = String(e);
     }
   }
 
@@ -43,6 +45,7 @@
   async function save() {
     if (!settings || !baseline) return;
     busy = true;
+    error = null;
     try {
       const needsRestart = nonBandwidthChanged(settings, baseline);
       await unwrap(commands.saveSettings(settings));
@@ -50,7 +53,7 @@
       baseline = structuredClone(settings);
       saved = true;
     } catch (e) {
-      toasts.error(`save failed: ${e}`);
+      error = String(e);
     } finally {
       busy = false;
     }
@@ -60,7 +63,7 @@
     try {
       await commands.restartApp();
     } catch (e) {
-      toasts.error(`restart failed: ${e}`);
+      error = String(e);
     }
   }
 
@@ -149,7 +152,9 @@
         <span class="hint">0 = unlimited</span>
       </section>
 
-      {#if saved && lastSaveNeedsRestart}
+      {#if error}
+        <p class="err tnum">{error}</p>
+      {:else if saved && lastSaveNeedsRestart}
         <div class="restart-banner">
           <span>Saved. Network &amp; storage changes apply on next launch.</span>
           <button type="button" class="restart" onclick={restart}>Restart now</button>
@@ -251,6 +256,16 @@
   .check input[type="checkbox"] {
     accent-color: var(--accent-magenta);
     cursor: pointer;
+  }
+
+  .err {
+    color: var(--err);
+    background: rgba(255, 63, 63, 0.08);
+    border: 1px solid rgba(255, 63, 63, 0.3);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-xs);
+    margin: 0;
   }
 
   .restart-banner {

@@ -6,8 +6,15 @@
   import { ui } from "$lib/stores/ui.svelte";
 
   let busy = $state(false);
+  let error = $state<string | null>(null);
 
   const target = $derived(ui.removeTarget);
+
+  // Clear inline error whenever the target changes (next time the modal opens).
+  $effect(() => {
+    void target;
+    error = null;
+  });
 
   function close() {
     ui.cancelRemove();
@@ -16,12 +23,13 @@
   async function confirm() {
     if (!target) return;
     busy = true;
+    error = null;
     try {
       await unwrap(commands.delete(target.id));
       toasts.ok(`deleted: ${target.name}`);
       ui.cancelRemove();
     } catch (e) {
-      toasts.error(`delete failed: ${e}`);
+      error = String(e);
     } finally {
       busy = false;
     }
@@ -40,6 +48,10 @@
       <span class="warn-icon">⚠</span>
       this cannot be undone
     </p>
+
+    {#if error}
+      <p class="err tnum">{error}</p>
+    {/if}
 
     <div class="actions">
       <button type="button" onclick={close} disabled={busy}>Cancel</button>
@@ -92,6 +104,16 @@
   .warn-icon {
     font-family: var(--font-mono);
     font-size: var(--fs-md);
+  }
+
+  .err {
+    color: var(--err);
+    background: rgba(255, 63, 63, 0.08);
+    border: 1px solid rgba(255, 63, 63, 0.3);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-xs);
+    margin: 0 0 var(--sp-3);
   }
 
   .actions {
