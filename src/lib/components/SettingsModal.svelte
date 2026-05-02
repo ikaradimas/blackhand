@@ -2,7 +2,6 @@
   import { commands, type AppSettings } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import Modal from "$lib/components/Modal.svelte";
-  import { toasts } from "$lib/stores/toasts.svelte";
   import { ui } from "$lib/stores/ui.svelte";
 
   let settings = $state<AppSettings | null>(null);

@@ -10,10 +10,8 @@
 
   const target = $derived(ui.removeTarget);
 
-  // Clear inline error whenever the target changes (next time the modal opens).
   $effect(() => {
-    void target;
-    error = null;
+    if (target) error = null;
   });
 
   function close() {

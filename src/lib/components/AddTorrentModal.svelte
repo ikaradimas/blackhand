@@ -14,7 +14,6 @@
 
   $effect(() => {
     if (ui.addModal && magnetInput) {
-      // Focus after the dialog is shown; queueMicrotask is enough.
       queueMicrotask(() => magnetInput?.focus());
     }
   });
