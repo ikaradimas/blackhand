@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { TorrentSummary } from "$lib/bindings";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
+  import PixelMark from "$lib/components/PixelMark.svelte";
 
   type Props = {
     t: TorrentSummary;
@@ -36,12 +37,10 @@
     return `${h}:${mm.toString().padStart(2, "0")}:${(secs % 60).toString().padStart(2, "0")}`;
   }
 
-  const stateDot = $derived(
-    t.finished ? "●" :
-    t.state === "live" ? "●" :
-    t.state === "paused" ? "◯" :
-    t.state === "error" ? "✕" :
-    "◐", // initializing
+  const stateLabel = $derived(
+    t.finished
+      ? "Finished"
+      : t.state.charAt(0).toUpperCase() + t.state.slice(1),
   );
 </script>
 
@@ -51,7 +50,13 @@
   data-state={t.state}
 >
   <div class="grid">
-    <span class="dot state-{t.state}" class:done={t.finished}>{stateDot}</span>
+    <span
+      class="dot state-{t.state}"
+      class:done={t.finished}
+      title={stateLabel}
+    >
+      <PixelMark hash={t.info_hash} />
+    </span>
     <span class="name" title={t.name ?? t.info_hash}>{t.name ?? t.info_hash}</span>
     <span class="num tnum">{fmtBytes(t.total_bytes)}</span>
     <span class="num tnum dn">{t.state === "paused" ? "—" : fmtBps(t.down_bps)}</span>
@@ -106,13 +111,17 @@
     display: grid;
     grid-template-columns: 18px minmax(0, 1fr) 80px 110px 110px 60px 80px auto;
     gap: var(--sp-3);
-    align-items: baseline;
+    align-items: center;
     font-size: var(--fs-sm);
   }
 
   .dot {
     color: var(--fg-2);
-    font-size: var(--fs-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
     line-height: 1;
   }
   .dot.state-live { color: var(--accent-cyan); }
