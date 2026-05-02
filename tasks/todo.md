@@ -307,14 +307,15 @@ Pick 2–3 max for a single milestone; don't blanket-add.
 - [x] Stats event loop @ 2 Hz emitting `torrents:snapshot` + `session:stats` (full snapshot, not deltas — fine at hobby scale)
 - [x] Manual test: add → progress → pause/resume/forget/delete → quit → relaunch → resume — all confirmed working
 
-### Phase 2 — Core UI (2–3 days)
-- [ ] Design tokens (`tokens.css`, `effects.css`)
-- [ ] Layout shell + tray + menu
-- [ ] Torrent list with live stats (subscribe to events → store)
-- [ ] Add-torrent modal (magnet + file picker)
-- [ ] Detail page: files / peers / trackers / info tabs
-- [ ] Settings page (download dir, port, global limits)
-- [ ] Confirmation dialog for remove + delete-files
+### Phase 2 — Core UI (2–3 days) — ✅ done 2026-05-02
+- [x] Design tokens (`src/lib/design/tokens.css` + `effects.css`) — palette, type, spacing, glow, scanlines
+- [x] Layout shell + global stats pills + bulk actions (Resume-all / Pause-all / + Add / gear)
+- [x] Torrent list with live stats — typed events into Svelte 5 rune stores → `TorrentRow` + 32-cell segmented `ProgressBar` + 5×5 pixel-art identicon
+- [x] Add-torrent modal (magnet + drag-and-drop or click-to-browse for `.torrent` files)
+- [ ] ~~Detail page: files / peers / trackers / info tabs~~ — deferred to Phase 3 (selection scaffolding kept in CSS for easy rewire)
+- [x] Settings page (modal) — download dir, listen port range, UPnP/DHT toggles, global up/down KB/s limits with live-apply
+- [x] Confirmation dialog for delete (forget stays one-click)
+- [x] **Bonus:** typed IPC via `tauri-specta` (DTO layer + auto-generated `src/lib/bindings.ts`)
 
 ### Phase 3 — Streaming & system integration (1 day)
 - [ ] Verify librqbit's sequential mode is on; confirm head pieces arrive first
@@ -363,6 +364,13 @@ If those five hold, ship it.
 ---
 
 ## Review
+
+### 2026-05-02 — Phase 2 complete
+- 9 commits cover Phase 2: typed IPC foundation → bindings pipeline → tokens → shell → list → identicons → modal → settings → remove confirm → bandwidth-live + alignment + bulk actions.
+- Frontend now reads as a real cyberpunk-styled torrent client: pixel-art identicons per torrent, segmented neon progress bars, sticky header with global stats + bulk controls, three modal flows (add / settings / remove confirm).
+- One real surprise debugged in the open: librqbit's `Speed.mbps` is *MiB/s* not megabits — display was off by ~8×. Captured in `memories/2026-05-02-phase2-typed-ipc-and-ui.md` so future-Claude doesn't repeat it.
+- Detail panel deferred to Phase 3. Selection wiring removed from `+page.svelte` but design-system CSS hooks (.row.selected, magenta rim) remain for trivial re-add.
+- Open question carried into Phase 3: do we use a Tauri `tauri-plugin-store` for the settings file, or stay with hand-rolled `serde_json` + `dirs::data_dir`? Current approach is simpler and works; revisit only if cross-process locking becomes relevant.
 
 ### 2026-05-02 — Phase 1 complete
 - Engine integration end-to-end: add (magnet), see live stats tick at 2 Hz, pause/resume/forget/delete, persistence survives a full quit+relaunch.
