@@ -7,16 +7,23 @@ class TorrentsStore {
   loaded = $state(false);
   #started = false;
 
+  /** Force a fresh snapshot now. Safe to call from anywhere; useful for
+   * surfaces (tray popup) whose webview may have missed events while
+   * hidden / not yet booted. */
+  async refresh() {
+    try {
+      const snapshot = await unwrap(commands.listTorrents());
+      this.list = snapshot.torrents;
+      this.loaded = true;
+    } catch {
+      // tolerable — caller will retry on next show
+    }
+  }
+
   async start() {
     if (this.#started) return;
     this.#started = true;
-    try {
-      const initial = await unwrap(commands.listTorrents());
-      this.list = initial.torrents;
-      this.loaded = true;
-    } catch {
-      // initial-fetch failures are tolerable; live events take over
-    }
+    await this.refresh();
     await events.torrentsSnapshotEvent.listen((e) => {
       this.list = e.payload.torrents;
       this.loaded = true;

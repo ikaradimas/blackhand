@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { emit } from "@tauri-apps/api/event";
+  import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 
   import type { TorrentSummary } from "$lib/bindings";
   import { session } from "$lib/stores/session.svelte";
@@ -44,13 +44,30 @@
     void emit("tray-popup-hover", { hovered });
   }
 
+  let unlistenShow: UnlistenFn | null = null;
+
+  async function refreshAll() {
+    await Promise.all([torrents.refresh(), session.refresh(), disk.refresh()]);
+  }
+
   onMount(() => {
     // Tell the backend the popup is alive so the hide-on-leave debounce can
     // be cancelled when the user moves the cursor into us.
     document.body.addEventListener("mouseenter", () => reportHover(true));
     document.body.addEventListener("mouseleave", () => reportHover(false));
-    // Refresh disk info each time the popup mounts (on first hover).
-    void disk.refresh();
+    // First-mount fetch — covers the case where the popup webview just
+    // booted and no live event has arrived yet.
+    void refreshAll();
+    // Subsequent refreshes happen every time Rust shows the popup. The
+    // persistent event listener may miss ticks while the webview is hidden
+    // on some platforms, so we refresh on each show as a belt-and-suspenders.
+    listen("tray-popup-shown", () => void refreshAll()).then((un) => {
+      unlistenShow = un;
+    });
+
+    return () => {
+      unlistenShow?.();
+    };
   });
 </script>
 
@@ -64,7 +81,14 @@
   </header>
 
   {#if active.length === 0}
-    <p class="empty">no active downloads</p>
+    <p class="empty">
+      {#if torrents.list.length === 0}
+        no torrents
+      {:else}
+        no active downloads
+        <span class="empty-sub">({torrents.list.length} idle/finished)</span>
+      {/if}
+    </p>
   {:else}
     <ul class="rows">
       {#each active as t (t.id)}
@@ -149,6 +173,14 @@
     font-size: var(--fs-xs);
     letter-spacing: var(--tracking-wider);
     text-transform: uppercase;
+    text-align: center;
+  }
+  .empty-sub {
+    display: block;
+    margin-top: 4px;
+    color: var(--fg-dim);
+    text-transform: none;
+    letter-spacing: 0;
   }
 
   .rows {

@@ -16,7 +16,7 @@ use settings::AppSettings;
 use tauri::async_runtime::JoinHandle;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Listener, Manager, PhysicalPosition, PhysicalSize, Rect};
+use tauri::{AppHandle, Emitter, Listener, Manager, PhysicalPosition, PhysicalSize, Rect};
 use tauri_specta::{collect_commands, collect_events, Builder};
 
 #[derive(Default)]
@@ -62,6 +62,10 @@ fn show_tray_popup(app: &AppHandle, icon_rect: Rect) {
     }
 
     let _ = w.show();
+    // Tell the popup it just became visible so it can re-fetch state.
+    // The popup's webview may have missed events while hidden / before its
+    // first boot, so we don't rely on the persistent listener alone.
+    let _ = app.emit("tray-popup-shown", ());
 }
 
 fn schedule_popup_hide(app: &AppHandle) {

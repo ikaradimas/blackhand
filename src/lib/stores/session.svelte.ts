@@ -5,14 +5,18 @@ class SessionStore {
   stats = $state<SessionStats | null>(null);
   #started = false;
 
-  async start() {
-    if (this.#started) return;
-    this.#started = true;
+  async refresh() {
     try {
       this.stats = await unwrap(commands.sessionStats());
     } catch {
-      // ignore initial-fetch failures; live events will fill us in
+      // tolerable
     }
+  }
+
+  async start() {
+    if (this.#started) return;
+    this.#started = true;
+    await this.refresh();
     await events.sessionStatsEvent.listen((e) => {
       this.stats = e.payload;
     });
