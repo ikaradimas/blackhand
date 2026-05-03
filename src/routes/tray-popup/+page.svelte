@@ -45,9 +45,36 @@
   }
 
   let unlistenShow: UnlistenFn | null = null;
+  let pollTimer: number | null = null;
+
+  /** While the popup is visible we poll because the persistent
+   * torrents-snapshot event stream from the backend doesn't always reach
+   * a hidden webview (notably WebView2 on Windows suspends them). 1s is
+   * twice the backend tick — fine for a status surface. */
+  const POLL_INTERVAL_MS = 1000;
 
   async function refreshAll() {
     await Promise.all([torrents.refresh(), session.refresh(), disk.refresh()]);
+  }
+
+  function startPolling() {
+    if (pollTimer != null) return;
+    pollTimer = window.setInterval(() => void refreshAll(), POLL_INTERVAL_MS);
+  }
+  function stopPolling() {
+    if (pollTimer != null) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  function onVisibilityChange() {
+    if (document.visibilityState === "visible") {
+      void refreshAll();
+      startPolling();
+    } else {
+      stopPolling();
+    }
   }
 
   onMount(() => {
@@ -55,17 +82,21 @@
     // be cancelled when the user moves the cursor into us.
     document.body.addEventListener("mouseenter", () => reportHover(true));
     document.body.addEventListener("mouseleave", () => reportHover(false));
-    // First-mount fetch — covers the case where the popup webview just
-    // booted and no live event has arrived yet.
-    void refreshAll();
-    // Subsequent refreshes happen every time Rust shows the popup. The
-    // persistent event listener may miss ticks while the webview is hidden
-    // on some platforms, so we refresh on each show as a belt-and-suspenders.
+
+    // Refresh as soon as Rust tells us the window just appeared (covers
+    // platforms where visibilitychange doesn't fire on webview unhide).
     listen("tray-popup-shown", () => void refreshAll()).then((un) => {
       unlistenShow = un;
     });
 
+    // Standard browser-visibility-driven polling.
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    void refreshAll();
+    if (document.visibilityState === "visible") startPolling();
+
     return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       unlistenShow?.();
     };
   });
