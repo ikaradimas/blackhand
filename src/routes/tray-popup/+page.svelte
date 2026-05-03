@@ -8,12 +8,14 @@
   import { disk } from "$lib/stores/disk.svelte";
   import { diskLevel, fmtBytes as fmtBytesShared } from "$lib/disk";
 
-  // Active = currently downloading (live + not finished). Most useful at a glance.
+  // Active = anything not finished and not paused (matches the rest of the
+  // app's "active" semantics; covers `initializing` while a freshly-added
+  // torrent is connecting to peers, not just `live`).
+  let activeAll = $derived(
+    torrents.list.filter((t) => !t.finished && t.state !== "paused"),
+  );
   let active = $derived(
-    torrents.list
-      .filter((t) => t.state === "live" && !t.finished)
-      .sort((a, b) => b.down_bps - a.down_bps)
-      .slice(0, 6),
+    [...activeAll].sort((a, b) => b.down_bps - a.down_bps).slice(0, 6),
   );
 
   let stats = $derived(session.stats);
@@ -77,10 +79,8 @@
         </li>
       {/each}
     </ul>
-    {#if torrents.list.filter((t) => t.state === "live" && !t.finished).length > active.length}
-      <p class="more tnum">
-        +{torrents.list.filter((t) => t.state === "live" && !t.finished).length - active.length} more
-      </p>
+    {#if activeAll.length > active.length}
+      <p class="more tnum">+{activeAll.length - active.length} more</p>
     {/if}
   {/if}
 
