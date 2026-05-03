@@ -1,12 +1,8 @@
 <script lang="ts">
-  import StatPill from "$lib/components/StatPill.svelte";
-  import { session } from "$lib/stores/session.svelte";
   import { torrents } from "$lib/stores/torrents.svelte";
-  import { disk } from "$lib/stores/disk.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import { commands } from "$lib/bindings";
   import { unwrap } from "$lib/api";
-  import { diskLevel, fmtBytes as fmtBytesShared, describeDisk } from "$lib/disk";
 
   async function pauseAll() {
     await Promise.allSettled(
@@ -19,35 +15,8 @@
     );
   }
 
-  const anyTorrents = $derived(torrents.list.length > 0);
   const anyPaused = $derived(torrents.list.some((t) => t.state === "paused"));
   const anyActive = $derived(torrents.list.some((t) => t.state !== "paused" && !t.finished));
-
-  const diskAccent = $derived.by(() => {
-    if (!disk.info) return "neutral" as const;
-    const lvl = diskLevel(disk.info.free_bytes, disk.info.total_bytes);
-    return lvl === "ok" ? ("neutral" as const) : lvl;
-  });
-  const diskValue = $derived(disk.info ? fmtBytesShared(disk.info.free_bytes) : "—");
-  const diskTitle = $derived(
-    disk.info ? `${describeDisk(disk.info)} · ${disk.info.path}` : "disk space unavailable",
-  );
-
-  function fmtBytes(n: number): string {
-    if (!Number.isFinite(n)) return "—";
-    const u = ["B", "KB", "MB", "GB", "TB"];
-    let i = 0;
-    let v = n;
-    while (v >= 1024 && i < u.length - 1) {
-      v /= 1024;
-      i++;
-    }
-    return `${v.toFixed(v < 10 ? 2 : 1)} ${u[i]}`;
-  }
-
-  function fmtBps(bps: number): string {
-    return `${fmtBytes(bps)}/s`;
-  }
 </script>
 
 <header class="hdr">
@@ -66,22 +35,6 @@
   </div>
 
   <div class="right">
-    {#if session.stats}
-      <div class="stats">
-        <StatPill
-          label="↓"
-          value={fmtBps(session.stats.down_bps)}
-          accent={session.stats.down_bps > 0 ? "magenta" : "neutral"}
-        />
-        <StatPill
-          label="↑"
-          value={fmtBps(session.stats.up_bps)}
-          accent={session.stats.up_bps > 0 ? "cyan" : "neutral"}
-        />
-        <StatPill label="peers" value={String(session.stats.peers_live)} />
-        <StatPill label="free" value={diskValue} accent={diskAccent} title={diskTitle} />
-      </div>
-    {/if}
     <div class="bulk">
       <button
         type="button"
@@ -176,11 +129,6 @@
     display: flex;
     gap: var(--sp-3);
     align-items: center;
-  }
-
-  .stats {
-    display: flex;
-    gap: var(--sp-2);
   }
 
   .add {

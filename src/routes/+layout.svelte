@@ -6,6 +6,7 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
 
   import AppHeader from "$lib/components/AppHeader.svelte";
+  import StatusBar from "$lib/components/StatusBar.svelte";
   import AddTorrentModal from "$lib/components/AddTorrentModal.svelte";
   import SettingsModal from "$lib/components/SettingsModal.svelte";
   import RemoveConfirmModal from "$lib/components/RemoveConfirmModal.svelte";
@@ -80,6 +81,7 @@
   <main>
     {@render children()}
   </main>
+  <StatusBar />
   <AddTorrentModal />
   <SettingsModal />
   <RemoveConfirmModal />
