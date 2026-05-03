@@ -2,12 +2,13 @@
   type Props = {
     label: string;
     value: string;
-    accent?: "magenta" | "cyan" | "neutral";
+    accent?: "magenta" | "cyan" | "neutral" | "warn" | "err";
+    title?: string;
   };
-  let { label, value, accent = "neutral" }: Props = $props();
+  let { label, value, accent = "neutral", title }: Props = $props();
 </script>
 
-<div class="pill" data-accent={accent}>
+<div class="pill" data-accent={accent} {title}>
   <span class="label">{label}</span>
   <span class="value tnum">{value}</span>
 </div>
@@ -42,5 +43,14 @@
   }
   .pill[data-accent="cyan"] .value {
     color: var(--accent-cyan);
+  }
+  .pill[data-accent="warn"] .value {
+    color: var(--warn);
+  }
+  .pill[data-accent="err"] {
+    border-color: var(--err-border);
+  }
+  .pill[data-accent="err"] .value {
+    color: var(--err);
   }
 </style>

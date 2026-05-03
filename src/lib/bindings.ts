@@ -22,6 +22,12 @@ export const commands = {
 	saveSettings: (settings: AppSettings) => typedError<null, string>(__TAURI_INVOKE("save_settings", { settings })),
 	restartApp: () => __TAURI_INVOKE<void>("restart_app"),
 	appVersion: () => __TAURI_INVOKE<string>("app_version"),
+	/**
+	 *  Disk capacity + available space for the filesystem hosting `path`.
+	 *  If `path` is None or empty, resolves to the currently-configured download
+	 *  directory (creating it if needed via the existing settings::resolve helper).
+	 */
+	diskSpace: (path: string | null) => typedError<DiskSpace, string>(__TAURI_INVOKE("disk_space", { path })),
 };
 
 /** Events */
@@ -55,6 +61,18 @@ export type AppSettings = {
 export type CategoryInfo = {
 	name: string,
 	count: number,
+};
+
+export type DiskSpace = {
+	// Total capacity of the filesystem containing `path`.
+	total_bytes: number,
+	// Bytes still available to a non-privileged user on that filesystem.
+	free_bytes: number,
+	/**
+	 *  The path actually queried (may be an ancestor if the requested path
+	 *  doesn't exist yet).
+	 */
+	path: string,
 };
 
 export type SessionStats = {

@@ -71,6 +71,17 @@ pub struct AddTorrentResult {
 }
 
 #[derive(Serialize, Deserialize, Type, Clone, Debug)]
+pub struct DiskSpace {
+    /// Total capacity of the filesystem containing `path`.
+    pub total_bytes: u64,
+    /// Bytes still available to a non-privileged user on that filesystem.
+    pub free_bytes: u64,
+    /// The path actually queried (may be an ancestor if the requested path
+    /// doesn't exist yet).
+    pub path: String,
+}
+
+#[derive(Serialize, Deserialize, Type, Clone, Debug)]
 pub struct TorrentFile {
     /// Position in the torrent's file table — the value used by `set_only_files`.
     pub idx: u32,

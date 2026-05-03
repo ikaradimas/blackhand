@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use librqbit::api::{ApiTorrentListOpts, TorrentIdOrHash};
@@ -7,7 +8,7 @@ use tauri::{AppHandle, State};
 
 use crate::categories::{CategoryInfo, CategoryStore};
 use crate::settings::{self, AppSettings};
-use crate::types::{AddTorrentResult, SessionStats, TorrentDetail, TorrentSnapshot};
+use crate::types::{AddTorrentResult, DiskSpace, SessionStats, TorrentDetail, TorrentSnapshot};
 
 type CmdResult<T> = Result<T, String>;
 
@@ -198,4 +199,41 @@ pub fn restart_app(app: AppHandle) {
 #[specta::specta]
 pub fn app_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
+}
+
+/// Walk up the path until we find an existing ancestor. Returns None only
+/// if even the root doesn't exist (essentially impossible in normal use).
+fn first_existing(p: &Path) -> Option<&Path> {
+    let mut cur: Option<&Path> = Some(p);
+    while let Some(c) = cur {
+        if c.exists() {
+            return Some(c);
+        }
+        cur = c.parent();
+    }
+    None
+}
+
+/// Disk capacity + available space for the filesystem hosting `path`.
+/// If `path` is None or empty, resolves to the currently-configured download
+/// directory (creating it if needed via the existing settings::resolve helper).
+#[tauri::command]
+#[specta::specta]
+pub fn disk_space(path: Option<String>) -> CmdResult<DiskSpace> {
+    let target: PathBuf = match path.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        Some(p) => PathBuf::from(p),
+        None => {
+            let cfg = settings::load().unwrap_or_default();
+            settings::resolve_download_dir(&cfg).map_err(err)?
+        }
+    };
+    let queried = first_existing(&target)
+        .ok_or_else(|| "no existing parent directory".to_string())?;
+    let total = fs2::total_space(queried).map_err(err)?;
+    let free = fs2::available_space(queried).map_err(err)?;
+    Ok(DiskSpace {
+        total_bytes: total,
+        free_bytes: free,
+        path: queried.to_string_lossy().into_owned(),
+    })
 }

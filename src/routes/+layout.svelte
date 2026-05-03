@@ -12,6 +12,7 @@
   import AboutModal from "$lib/components/AboutModal.svelte";
   import ToastStack from "$lib/components/ToastStack.svelte";
   import { categories } from "$lib/stores/categories.svelte";
+  import { disk } from "$lib/stores/disk.svelte";
   import { session } from "$lib/stores/session.svelte";
   import { torrents } from "$lib/stores/torrents.svelte";
   import { ui } from "$lib/stores/ui.svelte";
@@ -25,6 +26,7 @@
     document.body.classList.add("fx-scanlines");
     session.start();
     torrents.start();
+    disk.start();
     if (!isPopup) {
       categories.refresh();
     }

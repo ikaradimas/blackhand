@@ -1,10 +1,12 @@
 <script lang="ts">
   import { open } from "@tauri-apps/plugin-dialog";
 
-  import { commands, type AppSettings } from "$lib/bindings";
+  import { commands, type AppSettings, type DiskSpace } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import Modal from "$lib/components/Modal.svelte";
   import { ui } from "$lib/stores/ui.svelte";
+  import { disk } from "$lib/stores/disk.svelte";
+  import { diskLevel, describeDisk } from "$lib/disk";
 
   let settings = $state<AppSettings | null>(null);
   /** Snapshot at load/last-save, used to detect which fields changed. */
@@ -13,6 +15,9 @@
   let saved = $state(false);
   let error = $state<string | null>(null);
   let lastSaveNeedsRestart = $state(false);
+  let dirInfo = $state<DiskSpace | null>(null);
+  let dirInfoErr = $state<string | null>(null);
+  let dirProbeTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Lazy-load on first open; refresh whenever opened so external file edits are reflected.
   $effect(() => {
@@ -28,10 +33,32 @@
       const s = await unwrap(commands.getSettings());
       settings = s;
       baseline = structuredClone(s);
+      probeDir(s.download_dir ?? "");
     } catch (e) {
       error = String(e);
     }
   }
+
+  /** Debounced disk-space probe for the path the user is editing. */
+  function probeDir(path: string) {
+    if (dirProbeTimer) clearTimeout(dirProbeTimer);
+    dirProbeTimer = setTimeout(async () => {
+      try {
+        dirInfo = await unwrap(commands.diskSpace(path || null));
+        dirInfoErr = null;
+      } catch (e) {
+        dirInfo = null;
+        dirInfoErr = String(e);
+      }
+    }, 250);
+  }
+
+  // Reactively probe whenever the download_dir field changes (typing or
+  // browse-picker). $effect on settings.download_dir triggers the debounce.
+  $effect(() => {
+    if (!settings) return;
+    probeDir(settings.download_dir ?? "");
+  });
 
   function nonBandwidthChanged(a: AppSettings, b: AppSettings): boolean {
     return (
@@ -55,6 +82,8 @@
       // structuredClone chokes on Svelte 5 $state proxies; snapshot first.
       baseline = $state.snapshot(settings) as AppSettings;
       saved = true;
+      // Refresh the global header pill so it picks up the new dir.
+      void disk.refresh();
     } catch (e) {
       error = String(e);
     } finally {
@@ -116,7 +145,22 @@
               title="Browse for folder"
             >Browse…</button>
           </div>
-          <span class="hint">leave blank to use the OS default</span>
+          <span class="hint">
+            {#if dirInfo}
+              <span
+                class="disk"
+                data-level={diskLevel(dirInfo.free_bytes, dirInfo.total_bytes)}
+                title={dirInfo.path}
+              >{describeDisk(dirInfo)}</span>
+              {#if !settings.download_dir}
+                — leave blank to use the OS default
+              {/if}
+            {:else if dirInfoErr}
+              <span class="disk" data-level="err">disk: {dirInfoErr}</span>
+            {:else}
+              leave blank to use the OS default
+            {/if}
+          </span>
         </label>
       </section>
 
@@ -291,6 +335,16 @@
   .hint {
     font-size: var(--fs-xs);
     color: var(--fg-2);
+  }
+  .disk {
+    font-family: var(--font-mono);
+    color: var(--fg-1);
+  }
+  .disk[data-level="warn"] {
+    color: var(--warn);
+  }
+  .disk[data-level="err"] {
+    color: var(--err);
   }
 
   input[type="text"],

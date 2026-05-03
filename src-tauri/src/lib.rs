@@ -194,6 +194,7 @@ fn make_specta_builder() -> Builder<tauri::Wry> {
             commands::save_settings,
             commands::restart_app,
             commands::app_version,
+            commands::disk_space,
         ])
         .events(collect_events![
             stats::TorrentsSnapshotEvent,
