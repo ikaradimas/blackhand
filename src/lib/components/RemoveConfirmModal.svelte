@@ -106,8 +106,8 @@
 
   .err {
     color: var(--err);
-    background: rgba(255, 63, 63, 0.08);
-    border: 1px solid rgba(255, 63, 63, 0.3);
+    background: var(--err-bg);
+    border: 1px solid var(--err-border);
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--radius-md);
     font-size: var(--fs-xs);
@@ -145,12 +145,12 @@
     background: var(--err);
     border-color: var(--err);
     color: var(--fg-0);
-    box-shadow: 0 0 8px rgba(255, 63, 63, 0.4);
+    box-shadow: var(--glow-err-sm);
   }
   button.danger:hover:not(:disabled) {
     background: var(--err);
     border-color: var(--err);
     color: var(--fg-0);
-    box-shadow: 0 0 14px rgba(255, 63, 63, 0.6), 0 0 28px rgba(255, 63, 63, 0.25);
+    box-shadow: var(--glow-err-md);
   }
 </style>

@@ -213,8 +213,8 @@
     margin: 0;
     color: var(--err);
     font-size: var(--fs-xs);
-    background: rgba(255, 63, 63, 0.08);
-    border: 1px solid rgba(255, 63, 63, 0.3);
+    background: var(--err-bg);
+    border: 1px solid var(--err-border);
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--radius-md);
   }

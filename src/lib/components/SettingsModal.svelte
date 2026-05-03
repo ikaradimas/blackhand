@@ -269,8 +269,8 @@
 
   .err {
     color: var(--err);
-    background: rgba(255, 63, 63, 0.08);
-    border: 1px solid rgba(255, 63, 63, 0.3);
+    background: var(--err-bg);
+    border: 1px solid var(--err-border);
     padding: var(--sp-2) var(--sp-3);
     border-radius: var(--radius-md);
     font-size: var(--fs-xs);
@@ -292,7 +292,7 @@
 
   .saved-banner {
     padding: var(--sp-2) var(--sp-3);
-    background: rgba(57, 255, 20, 0.06);
+    background: var(--ok-bg);
     border: 1px solid var(--ok);
     border-radius: var(--radius-md);
     color: var(--fg-1);

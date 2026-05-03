@@ -39,7 +39,7 @@
 
   .bar[data-finished="true"] .cell.on {
     background: var(--ok);
-    box-shadow: 0 0 4px rgba(57, 255, 20, 0.5);
+    box-shadow: var(--glow-ok-sm);
   }
 
   .bar[data-paused="true"] .cell.on {
