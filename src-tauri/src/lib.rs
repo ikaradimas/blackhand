@@ -6,16 +6,90 @@ mod settings;
 mod stats;
 mod types;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use categories::CategoryStore;
 use librqbit::api::{ApiTorrentListOpts, TorrentIdOrHash};
 use librqbit::{AddTorrent, Api};
 use settings::AppSettings;
+use tauri::async_runtime::JoinHandle;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Listener, Manager, PhysicalPosition, PhysicalSize, Rect};
 use tauri_specta::{collect_commands, collect_events, Builder};
+
+#[derive(Default)]
+struct PopupHideTask {
+    handle: Mutex<Option<JoinHandle<()>>>,
+}
+
+fn show_tray_popup(app: &AppHandle, icon_rect: Rect) {
+    let Some(w) = app.get_webview_window("tray-popup") else {
+        return;
+    };
+    cancel_popup_hide(app);
+
+    // Place the popup near the tray icon. Above the icon if it's in the
+    // bottom half of the monitor (Windows-style taskbar), below it if it's
+    // in the top half (macOS-style menubar).
+    if let Ok(Some(monitor)) = w.current_monitor() {
+        let scale = monitor.scale_factor();
+        let mon_size = monitor.size();
+        let popup_size = w.outer_size().unwrap_or(PhysicalSize::new(320, 260));
+
+        let icon = match icon_rect.position {
+            tauri::Position::Physical(p) => (p.x as f64, p.y as f64),
+            tauri::Position::Logical(p) => (p.x * scale, p.y * scale),
+        };
+        let icon_dim = match icon_rect.size {
+            tauri::Size::Physical(s) => (s.width as f64, s.height as f64),
+            tauri::Size::Logical(s) => (s.width * scale, s.height * scale),
+        };
+
+        let icon_center_x = icon.0 + icon_dim.0 / 2.0;
+        let mut x = (icon_center_x - popup_size.width as f64 / 2.0) as i32;
+        let max_x = (mon_size.width as i32).saturating_sub(popup_size.width as i32 + 8);
+        x = x.max(8).min(max_x.max(8));
+
+        let y = if icon.1 < (mon_size.height as f64 / 2.0) {
+            (icon.1 + icon_dim.1 + 8.0) as i32
+        } else {
+            (icon.1 - popup_size.height as f64 - 8.0) as i32
+        };
+
+        let _ = w.set_position(PhysicalPosition { x, y });
+    }
+
+    let _ = w.show();
+}
+
+fn schedule_popup_hide(app: &AppHandle) {
+    let Some(state) = app.try_state::<Arc<PopupHideTask>>() else {
+        return;
+    };
+    let mut guard = state.handle.lock().unwrap();
+    if let Some(h) = guard.take() {
+        h.abort();
+    }
+    let app_for_task = app.clone();
+    *guard = Some(tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        if let Some(w) = app_for_task.get_webview_window("tray-popup") {
+            let _ = w.hide();
+        }
+    }));
+}
+
+fn cancel_popup_hide(app: &AppHandle) {
+    let Some(state) = app.try_state::<Arc<PopupHideTask>>() else {
+        return;
+    };
+    let mut guard = state.handle.lock().unwrap();
+    if let Some(h) = guard.take() {
+        h.abort();
+    }
+}
 
 fn add_magnet_url(api: Arc<Api>, url: String) {
     tauri::async_runtime::spawn(async move {
@@ -209,6 +283,20 @@ pub fn run() {
             let api = tauri::async_runtime::block_on(session::build_api(&cfg))?;
             app.manage(api.clone());
             app.manage(Arc::new(cfg));
+            app.manage(Arc::new(PopupHideTask::default()));
+
+            // Frontend tells us when the cursor is over the popup window
+            // itself, so we can cancel the hide-on-leave debounce.
+            let app_for_listen = app.handle().clone();
+            app.listen_any("tray-popup-hover", move |event| {
+                let payload: serde_json::Value =
+                    serde_json::from_str(event.payload()).unwrap_or_default();
+                if payload.get("hovered").and_then(|v| v.as_bool()) == Some(true) {
+                    cancel_popup_hide(&app_for_listen);
+                } else {
+                    schedule_popup_hide(&app_for_listen);
+                }
+            });
 
             let cats = Arc::new(CategoryStore::load());
             app.manage(cats.clone());
@@ -259,13 +347,16 @@ pub fn run() {
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        toggle_main_window(tray.app_handle());
+                    let app = tray.app_handle();
+                    match event {
+                        TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } => toggle_main_window(app),
+                        TrayIconEvent::Enter { rect, .. } => show_tray_popup(app, rect),
+                        TrayIconEvent::Leave { .. } => schedule_popup_hide(app),
+                        _ => {}
                     }
                 })
                 .build(app)?;

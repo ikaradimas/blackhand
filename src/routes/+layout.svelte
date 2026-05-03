@@ -2,6 +2,7 @@
   import "$lib/design/tokens.css";
   import "$lib/design/effects.css";
   import { onMount } from "svelte";
+  import { page } from "$app/state";
   import { getCurrentWindow } from "@tauri-apps/api/window";
 
   import AppHeader from "$lib/components/AppHeader.svelte";
@@ -17,11 +18,16 @@
 
   let { children } = $props();
 
+  // The tray-popup window loads /tray-popup and must skip the main shell.
+  let isPopup = $derived(page.url.pathname.startsWith("/tray-popup"));
+
   onMount(() => {
     document.body.classList.add("fx-scanlines");
     session.start();
     torrents.start();
-    categories.refresh();
+    if (!isPopup) {
+      categories.refresh();
+    }
   });
 
   function isTextTarget(t: EventTarget | null): boolean {
@@ -36,6 +42,8 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
+    // The popup window doesn't get the main app's shortcuts.
+    if (isPopup) return;
     // Use cmd on macOS, ctrl elsewhere.
     const mod = e.metaKey || e.ctrlKey;
     if (!mod) return;
@@ -63,15 +71,19 @@
 
 <svelte:window on:keydown={onKeydown} />
 
-<AppHeader />
-<main>
+{#if isPopup}
   {@render children()}
-</main>
-<AddTorrentModal />
-<SettingsModal />
-<RemoveConfirmModal />
-<AboutModal />
-<ToastStack />
+{:else}
+  <AppHeader />
+  <main>
+    {@render children()}
+  </main>
+  <AddTorrentModal />
+  <SettingsModal />
+  <RemoveConfirmModal />
+  <AboutModal />
+  <ToastStack />
+{/if}
 
 <style>
   main {
