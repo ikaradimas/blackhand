@@ -2,7 +2,12 @@
   import { commands } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import { torrents } from "$lib/stores/torrents.svelte";
-  import { categories, UNCATEGORIZED } from "$lib/stores/categories.svelte";
+  import {
+    categories,
+    UNCATEGORIZED,
+    FINISHED,
+    PENDING,
+  } from "$lib/stores/categories.svelte";
   import { toasts } from "$lib/stores/toasts.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import TorrentRow from "$lib/components/TorrentRow.svelte";
@@ -18,6 +23,8 @@
   const filtered = $derived.by(() => {
     const f = categories.filter;
     if (f === null) return torrents.list;
+    if (f === FINISHED) return torrents.list.filter((t) => t.finished);
+    if (f === PENDING) return torrents.list.filter((t) => !t.finished);
     if (f === UNCATEGORIZED) return torrents.list.filter((t) => !t.category);
     return torrents.list.filter((t) => t.category === f);
   });

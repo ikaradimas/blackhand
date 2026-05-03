@@ -3,8 +3,15 @@ import { unwrap } from "$lib/api";
 
 /** Sentinel for the "no category" filter (different from `null` which is "All"). */
 export const UNCATEGORIZED = "__uncategorized__";
-/** Sentinel for showing all torrents. */
-export type Filter = string | typeof UNCATEGORIZED | null;
+/** Built-in system filters — not user-editable, not stored on disk. */
+export const FINISHED = "__finished__";
+export const PENDING = "__pending__";
+export type Filter =
+  | string
+  | typeof UNCATEGORIZED
+  | typeof FINISHED
+  | typeof PENDING
+  | null;
 
 class CategoriesStore {
   list = $state<CategoryInfo[]>([]);

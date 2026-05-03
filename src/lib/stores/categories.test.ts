@@ -11,7 +11,12 @@ vi.mock("$lib/bindings", () => ({
   },
 }));
 
-import { categories, UNCATEGORIZED } from "./categories.svelte";
+import {
+  categories,
+  UNCATEGORIZED,
+  FINISHED,
+  PENDING,
+} from "./categories.svelte";
 
 describe("categories store", () => {
   beforeEach(() => {
@@ -26,9 +31,16 @@ describe("categories store", () => {
     expect(categories.filter).toBeNull();
   });
 
-  it("UNCATEGORIZED sentinel is distinct from null", () => {
-    expect(UNCATEGORIZED).not.toBeNull();
-    expect(typeof UNCATEGORIZED).toBe("string");
+  it("system-filter sentinels are distinct strings", () => {
+    const sentinels = [UNCATEGORIZED, FINISHED, PENDING];
+    for (const s of sentinels) {
+      expect(typeof s).toBe("string");
+      expect(s.length).toBeGreaterThan(0);
+    }
+    // No collisions among themselves or with `null` / common category names.
+    expect(new Set(sentinels).size).toBe(sentinels.length);
+    expect(sentinels).not.toContain("movies");
+    expect(sentinels).not.toContain("");
   });
 
   it("select() updates filter to a category name, sentinel, or null", () => {
@@ -36,6 +48,10 @@ describe("categories store", () => {
     expect(categories.filter).toBe("movies");
     categories.select(UNCATEGORIZED);
     expect(categories.filter).toBe(UNCATEGORIZED);
+    categories.select(FINISHED);
+    expect(categories.filter).toBe(FINISHED);
+    categories.select(PENDING);
+    expect(categories.filter).toBe(PENDING);
     categories.select(null);
     expect(categories.filter).toBeNull();
   });

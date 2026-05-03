@@ -1,8 +1,16 @@
 <script lang="ts">
-  import { categories, UNCATEGORIZED, type Filter } from "$lib/stores/categories.svelte";
+  import {
+    categories,
+    UNCATEGORIZED,
+    FINISHED,
+    PENDING,
+    type Filter,
+  } from "$lib/stores/categories.svelte";
   import { torrents } from "$lib/stores/torrents.svelte";
 
   const totalCount = $derived(torrents.list.length);
+  const finishedCount = $derived(torrents.list.filter((t) => t.finished).length);
+  const pendingCount = $derived(torrents.list.filter((t) => !t.finished).length);
   const uncategorizedCount = $derived(
     torrents.list.filter((t) => !t.category).length,
   );
@@ -13,8 +21,7 @@
 </script>
 
 <aside class="sidebar">
-  <h3 class="hd">Categories</h3>
-
+  <h3 class="hd">Status</h3>
   <ul class="list">
     <li>
       <button
@@ -27,7 +34,32 @@
         <span class="count tnum">{totalCount}</span>
       </button>
     </li>
+    <li>
+      <button
+        type="button"
+        class="row"
+        class:active={isActive(PENDING)}
+        onclick={() => categories.select(PENDING)}
+      >
+        <span class="name">Pending</span>
+        <span class="count tnum">{pendingCount}</span>
+      </button>
+    </li>
+    <li>
+      <button
+        type="button"
+        class="row"
+        class:active={isActive(FINISHED)}
+        onclick={() => categories.select(FINISHED)}
+      >
+        <span class="name">Finished</span>
+        <span class="count tnum">{finishedCount}</span>
+      </button>
+    </li>
+  </ul>
 
+  <h3 class="hd hd-spaced">Categories</h3>
+  <ul class="list">
     {#if uncategorizedCount > 0}
       <li>
         <button
@@ -55,6 +87,10 @@
         </button>
       </li>
     {/each}
+
+    {#if categories.list.length === 0 && uncategorizedCount === 0}
+      <li class="empty-hint">no user categories yet</li>
+    {/if}
   </ul>
 </aside>
 
@@ -74,6 +110,16 @@
     letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
     color: var(--accent-cyan);
+  }
+  .hd-spaced {
+    margin-top: var(--sp-4);
+  }
+
+  .empty-hint {
+    padding: 6px var(--sp-2);
+    color: var(--fg-2);
+    font-style: italic;
+    font-size: var(--fs-xs);
   }
 
   .list {
