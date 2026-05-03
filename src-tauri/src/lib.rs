@@ -11,6 +11,7 @@ use std::sync::Arc;
 use categories::CategoryStore;
 use librqbit::api::{ApiTorrentListOpts, TorrentIdOrHash};
 use librqbit::{AddTorrent, Api};
+use settings::AppSettings;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager};
@@ -158,6 +159,30 @@ pub fn run() {
     }
 
     tauri_builder
+        .on_window_event(|window, event| {
+            // Route window close + minimize through the tray when the user
+            // has hide_to_tray enabled. Reopen via tray-icon click or menu.
+            let app = window.app_handle();
+            let Some(cfg) = app.try_state::<Arc<AppSettings>>() else {
+                return;
+            };
+            if !cfg.hide_to_tray {
+                return;
+            }
+            match event {
+                tauri::WindowEvent::Resized(_) => {
+                    if window.is_minimized().unwrap_or(false) {
+                        let _ = window.unminimize();
+                        let _ = window.hide();
+                    }
+                }
+                tauri::WindowEvent::CloseRequested { api: close_api, .. } => {
+                    close_api.prevent_close();
+                    let _ = window.hide();
+                }
+                _ => {}
+            }
+        })
         .plugin(
             tauri_plugin_log::Builder::new()
                 .targets([
@@ -183,6 +208,7 @@ pub fn run() {
             let cfg = settings::load().unwrap_or_default();
             let api = tauri::async_runtime::block_on(session::build_api(&cfg))?;
             app.manage(api.clone());
+            app.manage(Arc::new(cfg));
 
             let cats = Arc::new(CategoryStore::load());
             app.manage(cats.clone());

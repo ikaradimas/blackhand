@@ -39,15 +39,17 @@ export type AddTorrentResult = {
 
 export type AppSettings = {
 	// Empty string -> resolve to ~/Downloads/BlackHand.
-	download_dir: string,
+	download_dir?: string,
 	// 0 (either side) -> use librqbit defaults.
-	listen_port_min: number,
-	listen_port_max: number,
-	enable_upnp: boolean,
-	enable_dht: boolean,
+	listen_port_min?: number,
+	listen_port_max?: number,
+	enable_upnp?: boolean,
+	enable_dht?: boolean,
 	// 0 -> unlimited.
-	upload_limit_kbps: number,
-	download_limit_kbps: number,
+	upload_limit_kbps?: number,
+	download_limit_kbps?: number,
+	// Route window close + minimize through the tray instead of taskbar / quit.
+	hide_to_tray?: boolean,
 };
 
 export type CategoryInfo = {

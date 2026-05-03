@@ -37,7 +37,8 @@
       a.listen_port_min !== b.listen_port_min ||
       a.listen_port_max !== b.listen_port_max ||
       a.enable_upnp !== b.enable_upnp ||
-      a.enable_dht !== b.enable_dht
+      a.enable_dht !== b.enable_dht ||
+      a.hide_to_tray !== b.hide_to_tray
     );
   }
 
@@ -124,6 +125,15 @@
           <input type="checkbox" bind:checked={settings.enable_dht} disabled={busy} />
           <span>DHT (distributed hash table)</span>
         </label>
+      </section>
+
+      <section class="group">
+        <h3>Behavior</h3>
+        <label class="check">
+          <input type="checkbox" bind:checked={settings.hide_to_tray} disabled={busy} />
+          <span>Hide to tray on close + minimize</span>
+        </label>
+        <span class="hint">when off, the X button quits and minimize goes to the taskbar</span>
       </section>
 
       <section class="group">

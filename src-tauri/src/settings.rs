@@ -8,6 +8,7 @@ use specta::Type;
 use crate::paths;
 
 #[derive(Serialize, Deserialize, Type, Clone, Debug)]
+#[serde(default)]
 pub struct AppSettings {
     /// Empty string -> resolve to ~/Downloads/BlackHand.
     pub download_dir: String,
@@ -19,6 +20,8 @@ pub struct AppSettings {
     /// 0 -> unlimited.
     pub upload_limit_kbps: u32,
     pub download_limit_kbps: u32,
+    /// Route window close + minimize through the tray instead of taskbar / quit.
+    pub hide_to_tray: bool,
 }
 
 impl Default for AppSettings {
@@ -31,6 +34,7 @@ impl Default for AppSettings {
             enable_dht: true,
             upload_limit_kbps: 0,
             download_limit_kbps: 0,
+            hide_to_tray: true,
         }
     }
 }
@@ -88,6 +92,24 @@ mod tests {
         assert!(s.enable_dht);
         assert_eq!(s.upload_limit_kbps, 0);
         assert_eq!(s.download_limit_kbps, 0);
+        assert!(s.hide_to_tray);
+    }
+
+    #[test]
+    fn settings_serde_uses_defaults_for_missing_fields() {
+        // Backwards-compat: an old settings.json that predates a new field
+        // should deserialize cleanly via #[serde(default)].
+        let legacy = r#"{
+            "download_dir": "",
+            "listen_port_min": 0,
+            "listen_port_max": 0,
+            "enable_upnp": true,
+            "enable_dht": true,
+            "upload_limit_kbps": 0,
+            "download_limit_kbps": 0
+        }"#;
+        let s: AppSettings = serde_json::from_str(legacy).unwrap();
+        assert!(s.hide_to_tray);
     }
 
     #[test]
@@ -124,6 +146,7 @@ mod tests {
             enable_dht: true,
             upload_limit_kbps: 500,
             download_limit_kbps: 2000,
+            hide_to_tray: false,
         };
         let json = serde_json::to_string(&s).unwrap();
         let back: AppSettings = serde_json::from_str(&json).unwrap();
@@ -134,5 +157,6 @@ mod tests {
         assert_eq!(back.enable_dht, s.enable_dht);
         assert_eq!(back.upload_limit_kbps, s.upload_limit_kbps);
         assert_eq!(back.download_limit_kbps, s.download_limit_kbps);
+        assert_eq!(back.hide_to_tray, s.hide_to_tray);
     }
 }
