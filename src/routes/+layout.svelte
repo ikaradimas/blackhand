@@ -91,6 +91,10 @@
 
 <style>
   main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    width: 100%;
     max-width: var(--content-max);
     margin: 0 auto;
     padding: var(--sp-5) var(--sp-5) var(--sp-7);

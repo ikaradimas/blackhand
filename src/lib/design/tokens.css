@@ -132,6 +132,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+  /* Flex column shell so the AppHeader stays at the top, the StatusBar
+   * pins to the bottom of the viewport, and only main scrolls between them. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 input,
 button,
 select,

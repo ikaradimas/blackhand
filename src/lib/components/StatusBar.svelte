@@ -57,9 +57,7 @@
 
 <style>
   .bar {
-    position: sticky;
-    bottom: 0;
-    z-index: var(--z-elevated);
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
