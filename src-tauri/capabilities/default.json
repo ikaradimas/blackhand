@@ -9,6 +9,7 @@
     "opener:default",
     "opener:allow-open-path",
     "notification:default",
-    "log:default"
+    "log:default",
+    "dialog:allow-open"
   ]
 }

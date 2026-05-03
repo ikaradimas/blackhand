@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { open } from "@tauri-apps/plugin-dialog";
+
   import { commands, type AppSettings } from "$lib/bindings";
   import { unwrap } from "$lib/api";
   import Modal from "$lib/components/Modal.svelte";
@@ -67,6 +69,23 @@
     }
   }
 
+  async function pickDownloadDir() {
+    if (!settings) return;
+    try {
+      const picked = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: settings.download_dir || undefined,
+        title: "Select download folder",
+      });
+      if (typeof picked === "string") {
+        settings.download_dir = picked;
+      }
+    } catch (e) {
+      error = String(e);
+    }
+  }
+
   function close() {
     ui.closeSettings();
   }
@@ -81,12 +100,21 @@
         <h3>Storage</h3>
         <label class="field">
           <span class="lbl">Download directory</span>
-          <input
-            type="text"
-            placeholder="(default: ~/Downloads/BlackHand)"
-            bind:value={settings.download_dir}
-            disabled={busy}
-          />
+          <div class="dir-row">
+            <input
+              type="text"
+              placeholder="(default: ~/Downloads/BlackHand)"
+              bind:value={settings.download_dir}
+              disabled={busy}
+            />
+            <button
+              type="button"
+              class="browse"
+              onclick={pickDownloadDir}
+              disabled={busy}
+              title="Browse for folder"
+            >Browse…</button>
+          </div>
           <span class="hint">leave blank to use the OS default</span>
         </label>
       </section>
@@ -217,6 +245,38 @@
     display: flex;
     gap: var(--sp-3);
     align-items: end;
+  }
+
+  .dir-row {
+    display: flex;
+    gap: var(--sp-2);
+    align-items: stretch;
+  }
+  .dir-row input {
+    flex: 1;
+    min-width: 0;
+  }
+  .browse {
+    background: var(--bg-2);
+    border: 1px solid var(--bg-3);
+    color: var(--fg-1);
+    border-radius: var(--radius-md);
+    padding: 0 var(--sp-3);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color var(--motion-fast), color var(--motion-fast);
+  }
+  .browse:hover:not(:disabled) {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+  .browse:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .lbl {
