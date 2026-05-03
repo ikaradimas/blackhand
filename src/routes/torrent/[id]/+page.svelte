@@ -153,7 +153,9 @@
     if (!detail) return;
     try {
       await openPath(detail.output_folder);
-    } catch {}
+    } catch (e) {
+      toasts.error(`couldn't open folder: ${e}`);
+    }
   }
 </script>
 

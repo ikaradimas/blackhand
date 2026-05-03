@@ -4,6 +4,7 @@
   import type { TorrentSummary } from "$lib/bindings";
   import ProgressBar from "$lib/components/ProgressBar.svelte";
   import PixelMark from "$lib/components/PixelMark.svelte";
+  import { toasts } from "$lib/stores/toasts.svelte";
 
   type Props = {
     t: TorrentSummary;
@@ -19,7 +20,7 @@
     try {
       await openPath(t.output_folder);
     } catch (e) {
-      console.error("openPath failed:", e);
+      toasts.error(`couldn't open folder: ${e}`);
     }
   }
 
