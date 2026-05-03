@@ -52,7 +52,8 @@
       const needsRestart = nonBandwidthChanged(settings, baseline);
       await unwrap(commands.saveSettings(settings));
       lastSaveNeedsRestart = needsRestart;
-      baseline = structuredClone(settings);
+      // structuredClone chokes on Svelte 5 $state proxies; snapshot first.
+      baseline = $state.snapshot(settings) as AppSettings;
       saved = true;
     } catch (e) {
       error = String(e);
