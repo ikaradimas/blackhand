@@ -1,6 +1,6 @@
 [package]
 name = "blackhand"
-version = "0.2.0"
+version = "0.2.1"
 description = "BlackHand — neon-noir BitTorrent client"
 authors = ["BlackHand Contributors"]
 edition = "2021"

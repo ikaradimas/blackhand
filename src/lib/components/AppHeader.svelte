@@ -1,8 +1,19 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import { torrents } from "$lib/stores/torrents.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import { commands } from "$lib/bindings";
   import { unwrap } from "$lib/api";
+
+  let version = $state("…");
+  onMount(async () => {
+    try {
+      version = await commands.appVersion();
+    } catch {
+      version = "?";
+    }
+  });
 
   async function pauseAll() {
     await Promise.allSettled(
@@ -31,7 +42,7 @@
       onclick={() => ui.openAbout()}
       title="About"
       aria-label="About BlackHand"
-    >v0.2.0</button>
+    >v{version}</button>
   </div>
 
   <div class="right">

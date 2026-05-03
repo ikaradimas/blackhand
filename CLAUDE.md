@@ -130,3 +130,28 @@ GIT_COMMITTER_NAME="Claude" \
 GIT_COMMITTER_EMAIL="noreply@anthropic.com" \
 git commit -m "..."
 ```
+
+**Version bump per commit.** Every commit must bump the version. Update **all three**
+locations together — they must stay in lockstep:
+
+- `package.json` → `"version"`
+- `src-tauri/Cargo.toml` → `version`
+- `src-tauri/tauri.conf.json` → `"version"`
+
+The `commands.appVersion()` Tauri command reads `CARGO_PKG_VERSION` at compile time, so
+the AppHeader badge and About modal pick up the new version automatically — no UI edits
+needed.
+
+**Which level to bump (semver):**
+
+- **Patch** (`0.2.1` → `0.2.2`) — default for every commit: bug fixes, refactors,
+  small UX/UI changes, doc updates, test additions, dependency bumps.
+- **Minor** (`0.2.x` → `0.3.0`) — when shipping a new user-facing feature
+  (e.g. tray popup, status bar, hide-to-tray). Resets patch to 0.
+- **Major** (`0.x.y` → `1.0.0`) — only on a deliberate stability promise or
+  breaking change to a public contract (Tauri command signature, persisted file
+  format, etc.). The user will normally make this call.
+
+If a single commit mixes a feature and a fix, use the **higher** of the two bumps. If
+unsure between patch and minor, bump patch — minor bumps should feel like a small
+release note, not just "I added some code today."
